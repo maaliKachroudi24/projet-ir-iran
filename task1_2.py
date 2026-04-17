@@ -1,10 +1,10 @@
-
 import os
 import re
 import time
-import requests
-import pandas as pd
+import json
+import random
 import pyterrier as pt
+from playwright.sync_api import sync_playwright
 from nltk.stem import PorterStemmer
 from nltk.stem import WordNetLemmatizer
 import nltk
@@ -13,172 +13,229 @@ nltk.download('wordnet', quiet=True)
 nltk.download('omw-1.4', quiet=True)
 
 # ============================================================
-# 1. REQUÊTES
+# 1. TOPICS (6 REQUÊTES)
 # ============================================================
-QUERIES = [
-    {"id": "q1", "text": "regime change Iran"},
-    {"id": "q2", "text": "closing Hormuz strait"},
-    {"id": "q3", "text": "US bases attacked"},
-    {"id": "q4", "text": "supreme leader Khamenei"},
-    {"id": "q5", "text": "Iran nuclear deal"}
+TOPICS = [
+    {"num": "MB01", "title": "regime change Iran"},
+    {"num": "MB02", "title": "closing Hormuz strait"},
+    {"num": "MB03", "title": "US bases attacked"},
+    {"num": "MB04", "title": "supreme leader Khamenei"},
+    {"num": "MB05", "title": "Iran nuclear deal"},
+    {"num": "MB06", "title": "Middle East conflict escalation"}
 ]
 
 # ============================================================
-# 2. COLLECTION MASTODON
+# 2. SCRAPING TWITTER (Playwright)
 # ============================================================
-class MastodonCollector:
-    def __init__(self, instance="https://mastodon.social"):
-        self.api = f"{instance}/api/v1"
+def scrape_tweets_for_query(page, query_text, target=100):
 
-    def search_hashtag(self, hashtag, limit=50):
-        url = f"{self.api}/timelines/tag/{hashtag}"
-        params = {"limit": min(limit, 40), "local": False}
-        try:
-            r = requests.get(url, params=params, timeout=20)
-            r.raise_for_status()
-            posts = r.json()
-            results = []
-            for p in posts:
-                results.append({
-                    "id": p["id"],
-                    "text": self._clean_html(p["content"]),
-                    "author": p["account"]["username"],
-                    "url": p["url"],
-                    "date": p["created_at"]
+    url = f"https://x.com/search?q={query_text.replace(' ', '%20')}&src=typed_query"
+    page.goto(url, wait_until="domcontentloaded")
+
+    time.sleep(5)
+
+    collected = []
+    seen_ids = set()
+    scrolls = 0
+
+    while len(collected) < target and scrolls < 60:
+
+        tweets = page.query_selector_all("article[data-testid='tweet']")
+
+        for tweet in tweets:
+            try:
+                text_el = tweet.query_selector("div[data-testid='tweetText']")
+                if not text_el:
+                    continue
+
+                text = text_el.inner_text().strip()
+
+                link_el = tweet.query_selector("a[href*='/status/']")
+                if not link_el:
+                    continue
+
+                href = link_el.get_attribute("href")
+                match = re.search(r"/status/(\d+)", href)
+                if not match:
+                    continue
+
+                doc_id = match.group(1)
+
+                if doc_id in seen_ids:
+                    continue
+
+                seen_ids.add(doc_id)
+
+                author_el = tweet.query_selector("div[data-testid='User-Name']")
+                author = author_el.inner_text().split("\n")[0] if author_el else "unknown"
+
+                time_el = tweet.query_selector("time")
+                created_at = time_el.get_attribute("datetime") if time_el else ""
+
+                collected.append({
+                    "id": doc_id,
+                    "text": text,
+                    "author": author,
+                    "date": created_at
                 })
-            return results
-        except Exception as e:
-            print(f"  ⚠️ Erreur hashtag #{hashtag}: {e}")
-            return []
 
-    def _clean_html(self, html):
-        clean = re.sub(r'<[^>]+>', '', html)
-        clean = re.sub(r'&[a-z]+;', ' ', clean)
-        return clean.strip()
+                if len(collected) >= target:
+                    break
 
-    def collect_for_query(self, query_text, target=100):
-        words = [w for w in query_text.lower().split() if len(w) > 2 and w not in ("the","and","for","with")]
-        hashtags = list(set(words))[:3]
-        if "iran" not in hashtags:
-            hashtags.append("iran")
-        print(f"  🔍 Hashtags: {hashtags}")
+            except:
+                continue
 
-        all_posts = []
-        for tag in hashtags:
-            posts = self.search_hashtag(tag, limit=target)
-            for p in posts:
-                p["source_tag"] = tag
-            all_posts.extend(posts)
-            time.sleep(0.5)
+        page.evaluate(f"window.scrollBy(0, {random.randint(1000,2000)})")
+        time.sleep(random.uniform(2,4))
+        scrolls += 1
 
-        seen = set()
-        unique = []
-        for p in all_posts:
-            if p["id"] not in seen:
-                seen.add(p["id"])
-                unique.append(p)
-        return unique[:target]
+    return collected
 
-def build_collection():
-    collector = MastodonCollector()
-    corpus_records = []
-    qrels_records = []
 
-    for q in QUERIES:
-        qid = q["id"]
-        qtext = q["text"]
-        print(f"\n📥 Requête {qid} : '{qtext}'")
-        posts = collector.collect_for_query(qtext, target=100)
-        print(f"   → {len(posts)} posts uniques")
+def collect_all_queries():
 
-        for idx, post in enumerate(posts):
-            doc_id = f"mastodon_{post['id']}"
-            if not any(d["docno"] == doc_id for d in corpus_records):
-                corpus_records.append({
-                    "docno": doc_id,
-                    "text": post["text"],
-                    "author": post["author"],
-                    "url": post["url"],
-                    "date": post["date"]
-                })
-            rel = 1 if idx < 30 else 0
-            qrels_records.append({
-                "query_id": qid,
-                "docno": doc_id,
-                "relevance": rel
-            })
+    all_data = {}
 
-    corpus_df = pd.DataFrame(corpus_records)
-    qrels_df = pd.DataFrame(qrels_records)
-    return corpus_df, qrels_df
+    with sync_playwright() as p:
+        
+        browser = p.chromium.connect_over_cdp("http://localhost:9222")
+
+        context = browser.contexts[0]
+        page = context.new_page()
+
+        for topic in TOPICS:
+            print(f"\n📥 {topic['num']} - {topic['title']}")
+
+            posts = scrape_tweets_for_query(page, topic["title"], 100)
+            print(f"   → {len(posts)} tweets")
+
+            all_data[topic["num"]] = posts
+            time.sleep(5)
+
+        browser.close()
+
+    return all_data
 
 # ============================================================
-# 3. INDEXATION (avec chemins absolus)
+# 3. PREPROCESSING
 # ============================================================
 def preprocess(text, method):
-    if not isinstance(text, str) or pd.isna(text):
+
+    if not isinstance(text, str):
         return ""
+
     text = text.lower()
     text = re.sub(r'[^\w\s]', ' ', text)
     tokens = text.split()
+
     if method == "lexeme":
         return " ".join(tokens)
+
     elif method == "stem":
         stemmer = PorterStemmer()
         return " ".join(stemmer.stem(t) for t in tokens)
+
     elif method == "lemma":
         lemmatizer = WordNetLemmatizer()
         return " ".join(lemmatizer.lemmatize(t) for t in tokens)
-    else:
-        raise ValueError("method doit être 'lexeme', 'stem' ou 'lemma'")
 
-def build_index(corpus_df, method, base_dir="indexes"):
-    """Crée un index PyTerrier avec un chemin absolu."""
-    # Créer le répertoire avec chemin absolu
+    else:
+        raise ValueError("method must be lexeme, stem, lemma")
+
+# ============================================================
+# 4. BUILD DATASET (600 tweets)
+# ============================================================
+def build_dataset():
+
+    all_data = collect_all_queries()
+
+    corpus = []
+    qrels = []
+
+    for topic in TOPICS:
+        qid = topic["num"]
+        posts = all_data[qid]
+
+        for i, post in enumerate(posts):
+
+            corpus.append({
+                "id": post["id"],
+                "timestamp": post["date"],
+                "user": post["author"],
+                "text": post["text"],
+                "lang": "en",
+                "retweets": 0,
+                "likes": 0
+            })
+
+            relevance = 1 if i < 30 else 0
+            qrels.append(f"{qid} 0 {post['id']} {relevance}")
+
+    return corpus, qrels
+
+# ============================================================
+# 5. SAVE FILES
+# ============================================================
+def save_files(corpus, qrels):
+
+    os.makedirs("collection", exist_ok=True)
+
+    with open("collection/corpus_tweets.json", "w", encoding="utf-8") as f:
+        json.dump(corpus, f, indent=2, ensure_ascii=False)
+
+    with open("collection/topics.json", "w", encoding="utf-8") as f:
+        json.dump(TOPICS, f, indent=2, ensure_ascii=False)
+
+    with open("collection/qrels.txt", "w", encoding="utf-8") as f:
+        for line in qrels:
+            f.write(line + "\n")
+
+    print("\n📁 Files generated in /collection")
+
+# ============================================================
+# 6. INDEXATION
+# ============================================================
+def build_index(corpus, method, base_dir="indexes"):
+
     abs_base = os.path.abspath(base_dir)
     index_dir = os.path.join(abs_base, f"index_{method}")
     os.makedirs(index_dir, exist_ok=True)
-    
-    print(f"\n🔨 Indexation avec {method.upper()} dans {index_dir}")
-    df = corpus_df.copy()
+
+    print(f"\n🔨 Index {method}")
+
+    import pandas as pd
+    df = pd.DataFrame(corpus)
+
     df["processed"] = df["text"].apply(lambda x: preprocess(x, method))
-    index_data = df[["docno", "processed"]].rename(columns={"processed": "text"})
-    
-    # Augmenter la taille max du champ docno (IDs Mastodon longs)
+
+    index_data = df[["id", "processed"]].rename(
+        columns={"id": "docno", "processed": "text"}
+    )
+
     indexer = pt.IterDictIndexer(index_dir, overwrite=True, meta={"docno": 50})
-    index_ref = indexer.index(index_data.to_dict(orient="records"))
-    print(f"   ✅ Index sauvegardé")
-    return index_ref
+    indexer.index(index_data.to_dict(orient="records"))
 
 # ============================================================
-# 4. MAIN
+# 7. MAIN
 # ============================================================
 def main():
+
     if not pt.started():
         pt.init()
 
-    print("=" * 60)
-    print("TÂCHE 1 : Construction de la collection de test (Mastodon)")
-    print("=" * 60)
+    print("\n==============================")
+    print("SRI PROJECT - TWITTER SCRAPING")
+    print("==============================")
 
-    corpus_df, qrels_df = build_collection()
+    corpus, qrels = build_dataset()
 
-    # Sauvegarder les fichiers
-    corpus_df.to_csv("corpus.csv", index=False, encoding="utf-8")
-    qrels_df.to_csv("qrels.csv", index=False, sep="\t")
-    print(f"\n✅ Corpus : {len(corpus_df)} documents uniques → corpus.csv")
-    print(f"✅ Qrels   : {len(qrels_df)} jugements → qrels.csv")
+    save_files(corpus, qrels)
 
-    print("\n" + "=" * 60)
-    print("TÂCHE 2 : Indexation (lexèmes, stems, lemmes)")
-    print("=" * 60)
-
-    # Créer les trois index
     for method in ["lexeme", "stem", "lemma"]:
-        build_index(corpus_df, method)
+        build_index(corpus, method)
 
-    print("\n🎉 Tâches 1 et 2 terminées avec succès !")
-    print("   Fichiers générés : corpus.csv, qrels.csv, indexes/")
+    print("\n🎉 DONE: 600 tweets collected and indexed")
 
+# ============================================================
 if __name__ == "__main__":
     main()
