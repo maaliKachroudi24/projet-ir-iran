@@ -2,17 +2,16 @@
 # -*- coding: utf-8 -*-
 """
 Tâches 3 & 4 : Recherche et évaluation avec différents modèles
-Charge les index créés précédemment et calcule MAP, P@1, P@5, P@10.
 """
 
 import os
 import re
+import glob
 import pyterrier as pt
 import pandas as pd
-from nltk.stem import PorterStemmer
-from nltk.stem import WordNetLemmatizer
 import ir_measures
-from ir_measures import MAP, P, Recall
+from ir_measures import MAP, P, Recall, RPrec
+from nltk.stem import PorterStemmer, WordNetLemmatizer
 import nltk
 
 nltk.download('wordnet', quiet=True)
@@ -22,36 +21,49 @@ if not pt.java.started():
     pt.java.init()
 
 # ============================================================
-# 1. CHARGEMENT DES DONNÉES
+# 1. CONFIGURATION
 # ============================================================
-queries_df = pd.DataFrame([
-    {"qid": "q1", "query": "regime change Iran"},
-    {"qid": "q2", "query": "closing Hormuz strait"},
-    {"qid": "q3", "query": "US bases attacked"},
-    {"qid": "q4", "query": "supreme leader Khamenei"},
-    {"qid": "q5", "query": "Iran nuclear deal"}
-])
+TOPICS = [
+    {"qid": "MB01", "query": "regime change Iran"},
+    {"qid": "MB02", "query": "closing Hormuz strait"},
+    {"qid": "MB03", "query": "US bases attacked"},
+    {"qid": "MB04", "query": "supreme leader Khamenei"},
+    {"qid": "MB05", "query": "Iran nuclear deal"},
+    {"qid": "MB06", "query": "Middle East conflict escalation"},
+]
 
-qrels_raw = pd.read_csv("qrels.csv", sep="\t")
-print(f"✅ Qrels chargés : {len(qrels_raw)} jugements")
+queries_df = pd.DataFrame(TOPICS)
 
-# Convertir qrels au format ir_measures
-qrels_im = qrels_raw.rename(columns={
-    "query_id": "query_id",
-    "docno": "doc_id",
-    "relevance": "relevance"
-})[["query_id", "doc_id", "relevance"]]
-qrels_im.columns = ["query_id", "doc_id", "relevance"]
-
+RESULTS_DIR = "results"
+os.makedirs(RESULTS_DIR, exist_ok=True)
 
 # ============================================================
-# 2. PRÉTRAITEMENT
+# 2. CHARGEMENT DES QRELS
 # ============================================================
-stemmer = PorterStemmer()
+def load_qrels(path="collection/qrels.txt"):
+    """
+    Lit qrels.txt (format TREC : qid 0 docno relevance)
+    et retourne un DataFrame compatible ir_measures.
+    """
+    rows = []
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            parts = line.strip().split()
+            if len(parts) == 4:
+                qid, _, docno, rel = parts
+                rows.append({"query_id": qid, "doc_id": docno, "relevance": int(rel)})
+    df = pd.DataFrame(rows)
+    print(f"✅ Qrels chargés : {len(df)} jugements")
+    return df
+
+# ============================================================
+# 3. PRÉTRAITEMENT
+# ============================================================
+stemmer    = PorterStemmer()
 lemmatizer = WordNetLemmatizer()
 
 def preprocess_text(text, method):
-    if not isinstance(text, str) or pd.isna(text):
+    if not isinstance(text, str):
         return ""
     text = text.lower()
     text = re.sub(r'[^\w\s]', ' ', text)
@@ -65,78 +77,215 @@ def preprocess_text(text, method):
     return ""
 
 # ============================================================
-# 3. CHARGEMENT D'INDEX
+# 4. CHARGEMENT DE L'INDEX  ← CORRECTION PRINCIPALE
 # ============================================================
+def find_index_path(method, base_dir="indexes"):
+    """
+    IterDictIndexer crée parfois un sous-dossier supplémentaire.
+    Cette fonction cherche data.properties de manière récursive
+    et retourne le dossier qui le contient.
+    """
+    base = os.path.abspath(base_dir)
+    top  = os.path.join(base, f"index_{method}")
+
+    # Recherche récursive de data.properties
+    candidates = glob.glob(os.path.join(top, "**", "data.properties"), recursive=True)
+    if candidates:
+        return os.path.dirname(candidates[0])
+
+    # Vérification directe
+    if os.path.exists(os.path.join(top, "data.properties")):
+        return top
+
+    raise FileNotFoundError(
+        f"Aucun data.properties trouvé sous {top}\n"
+        f"Vérifiez que task_1_2.py a bien créé les index."
+    )
+
+
 def load_index(method):
-    base_dir = os.path.abspath("indexes")
-    index_path = os.path.join(base_dir, f"index_{method}")
-    if not os.path.exists(index_path):
-        raise FileNotFoundError(f"Index introuvable : {index_path}")
-    print(f"📂 Chargement de l'index {method.upper()} depuis {index_path}")
-    return pt.IndexFactory.of(index_path)
+    idx_path = find_index_path(method)
+    print(f"  📂 Index {method.upper()} → {idx_path}")
+    return pt.IndexFactory.of(idx_path)
 
 # ============================================================
-# 4. ÉVALUATION
+# 5. TÂCHE 3 : RETRIEVAL
 # ============================================================
-preprocess_methods = ["lexeme", "stem", "lemma"]
-models = {
+MODELS = {
     "TF_IDF": "TF_IDF",
     "BM25":   "BM25",
     "PL2":    "PL2",
-    "DPH":    "DPH"
+    "DPH":    "DPH",
 }
 
-metrics = [MAP, P@1, P@5, P@10, Recall@30]
+def run_all_experiments():
+    all_runs = {}
 
-all_results = []
+    for method in ["lexeme", "stem", "lemma"]:
+        print(f"\n{'='*55}")
+        print(f"  Prétraitement : {method.upper()}")
+        print(f"{'='*55}")
 
-for prep in preprocess_methods:
-    print(f"\n{'='*50}")
-    print(f"Prétraitement : {prep.upper()}")
-    print('='*50)
-
-    try:
-        index = load_index(prep)
-    except Exception as e:
-        print(f"❌ Erreur chargement index : {e}")
-        continue
-
-    # Prétraiter les requêtes
-    queries_proc = queries_df.copy()
-    queries_proc["query"] = queries_proc["query"].apply(lambda x: preprocess_text(x, prep))
-
-    for model_name, wmodel in models.items():
-        print(f"  Modèle : {model_name}...", end=" ", flush=True)
         try:
-            retriever = pt.terrier.Retriever(index, wmodel=wmodel) % 30
-            results = retriever.transform(queries_proc)
+            index = load_index(method)
+        except FileNotFoundError as e:
+            print(f"  ❌ {e}")
+            continue
 
-            # Convertir results au format ir_measures
-            run = results.rename(columns={"qid": "query_id", "docno": "doc_id", "score": "score"})
-            run = run[["query_id", "doc_id", "score"]]
+        # Requêtes prétraitées avec la même méthode que l'index
+        q_proc = queries_df.copy()
+        q_proc["query"] = q_proc["query"].apply(lambda x: preprocess_text(x, method))
 
-            # Évaluation avec ir_measures
-            scores = ir_measures.calc_aggregate(metrics, qrels_im, run)
+        for model_name, wmodel in MODELS.items():
+            key = f"{method}_{model_name}"
+            print(f"  🔍 Modèle {model_name}...", end=" ", flush=True)
+            try:
+                retriever = pt.terrier.Retriever(index, wmodel=wmodel) % 30
+                results   = retriever.transform(q_proc)
+                all_runs[key] = results
 
-            row = {"preprocessing": prep, "model": model_name}
+                out = os.path.join(RESULTS_DIR, f"run_{key}.csv")
+                results.to_csv(out, index=False)
+                print(f"✅  ({len(results)} lignes)")
+            except Exception as e:
+                print(f"❌  Erreur : {e}")
+
+    return all_runs
+
+# ============================================================
+# 6. TÂCHE 4 : ÉVALUATION
+# ============================================================
+METRICS = [MAP, P@1, P@5, P@10, Recall@30, RPrec]
+
+def evaluate_all(all_runs, qrels_df):
+    summary_rows = []
+
+    print(f"\n{'='*55}")
+    print("  ÉVALUATION")
+    print(f"{'='*55}")
+
+    for key, run_pt in all_runs.items():
+        method, model = key.split("_", 1)
+
+        # Convertir au format ir_measures : query_id, doc_id, score
+        run_im = (run_pt
+                  .rename(columns={"qid": "query_id", "docno": "doc_id", "score": "score"})
+                  [["query_id", "doc_id", "score"]])
+
+        try:
+            scores = ir_measures.calc_aggregate(METRICS, qrels_df, run_im)
+            row = {"experiment": key, "method": method, "model": model}
             for m, v in scores.items():
                 row[str(m)] = round(v, 4)
-            all_results.append(row)
-            print("✅")
+            summary_rows.append(row)
+
+            # Affichage résumé ligne par ligne
+            map_val = scores.get(MAP, "-")
+            p5_val  = scores.get(P@5, "-")
+            print(f"  {key:<25}  MAP={map_val:.4f}  P@5={p5_val:.4f}")
 
         except Exception as e:
-            print(f"❌ Erreur : {e}")
+            print(f"  ❌ Erreur évaluation {key}: {e}")
+
+    summary_df = pd.DataFrame(summary_rows)
+    out = os.path.join(RESULTS_DIR, "evaluation_summary.csv")
+    summary_df.to_csv(out, index=False)
+    print(f"\n✅ Résumé sauvegardé → {out}")
+    return summary_df
+
+
+def print_summary(summary_df):
+    if summary_df.empty:
+        print("\n❌ Aucun résultat à afficher.")
+        return
+
+    print("\n" + "="*70)
+    print("TABLEAU RÉCAPITULATIF")
+    print("="*70)
+    print(summary_df.to_string(index=False))
+    print("="*70)
+
+    # Trouve la colonne MAP (peut s'appeler "AP" ou "MAP" selon ir_measures)
+    map_col = next((c for c in summary_df.columns if c in ("AP", "nDCG", "MAP")), None)
+    if map_col:
+        best = summary_df.loc[summary_df[map_col].idxmax()]
+        print(f"\n🏆 Meilleure stratégie ({map_col}) : {best['experiment']}  = {best[map_col]:.4f}")
+
+
+def plot_recall_precision(all_runs, qrels_df):
+    """Courbes Rappel-Précision interpolées (11 niveaux standard)."""
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        recall_levels = [i / 10 for i in range(11)]
+        # Compatibilité selon la version de ir_measures
+        try:
+            rp_metrics = [ir_measures.IPrec @ r for r in recall_levels]
+        except Exception:
+            try:
+                rp_metrics = [ir_measures.iprec_at_recall[r] for r in recall_levels]
+            except Exception:
+                print("  ⚠️  ir_measures ne supporte pas les métriques iprec — courbes ignorées")
+                return
+
+        fig, ax = plt.subplots(figsize=(10, 7))
+        plotted = False
+
+        for key, run_pt in all_runs.items():
+            run_im = (run_pt
+                      .rename(columns={"qid": "query_id", "docno": "doc_id", "score": "score"})
+                      [["query_id", "doc_id", "score"]])
+            try:
+                scores    = ir_measures.calc_aggregate(rp_metrics, qrels_df, run_im)
+                prec_vals = [scores.get(m, 0.0) for m in rp_metrics]
+                ax.plot(recall_levels, prec_vals, marker='o', label=key)
+                plotted = True
+            except Exception as e:
+                print(f"  ⚠️  Courbe R-P impossible pour {key}: {e}")
+
+        if plotted:
+            ax.set_xlabel("Rappel")
+            ax.set_ylabel("Précision")
+            ax.set_title("Courbes Rappel-Précision — Toutes stratégies")
+            ax.legend(loc="upper right", fontsize=7)
+            ax.grid(True)
+            fig.tight_layout()
+
+            plot_path = os.path.join(RESULTS_DIR, "recall_precision_curves.png")
+            fig.savefig(plot_path, dpi=150)
+            print(f"\n📈 Courbes R-P → {plot_path}")
+        else:
+            print("\n⚠️  Aucune courbe générée.")
+
+    except ImportError:
+        print("  ⚠️  matplotlib non installé — pip install matplotlib")
 
 # ============================================================
-# 5. SYNTHÈSE FINALE
+# 7. MAIN
 # ============================================================
-if all_results:
-    summary = pd.DataFrame(all_results)
-    print("\n" + "="*70)
-    print("RÉSULTATS FINAUX")
-    print("="*70)
-    print(summary.to_string(index=False))
-    summary.to_csv("evaluation_results.csv", index=False)
-    print("\n✅ Résultats sauvegardés dans evaluation_results.csv")
-else:
-    print("\n❌ Aucun résultat généré. Vérifiez vos index.")
+def main():
+    print("\n" + "="*55)
+    print("SRI PROJECT — TÂCHES 3 & 4")
+    print("="*55)
+
+    qrels_df = load_qrels("collection/qrels.txt")
+
+    # ── Tâche 3 : Retrieval ──
+    all_runs = run_all_experiments()
+
+    if not all_runs:
+        print("\n❌ Aucun index chargé. Vérifiez que task_1_2.py a créé le dossier indexes/")
+        return
+
+    # ── Tâche 4 : Évaluation ──
+    summary_df = evaluate_all(all_runs, qrels_df)
+    plot_recall_precision(all_runs, qrels_df)
+    print_summary(summary_df)
+
+    print("\n🎉 DONE — Résultats dans le dossier /results/")
+
+
+if __name__ == "__main__":
+    main()

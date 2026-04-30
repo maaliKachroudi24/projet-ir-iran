@@ -1,0 +1,1038 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>SRI Dashboard — Iran Tweets</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: system-ui, sans-serif;
+        background: #f5f5f0;
+        color: #1a1a1a;
+        font-size: 14px;
+      }
+      header {
+        background: #fff;
+        border-bottom: 1px solid #e0e0d8;
+        padding: 14px 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      header h1 {
+        font-size: 18px;
+        font-weight: 500;
+      }
+      header span {
+        font-size: 12px;
+        color: #888;
+        background: #f0effe;
+        color: #534ab7;
+        padding: 3px 10px;
+        border-radius: 20px;
+      }
+      .nav {
+        display: flex;
+        gap: 2px;
+        padding: 0 24px;
+        background: #fff;
+        border-bottom: 1px solid #e0e0d8;
+      }
+      .nav button {
+        padding: 10px 16px;
+        font-size: 13px;
+        cursor: pointer;
+        border: none;
+        background: none;
+        color: #666;
+        border-bottom: 2px solid transparent;
+      }
+      .nav button.active {
+        color: #534ab7;
+        border-bottom-color: #534ab7;
+        font-weight: 500;
+      }
+      .nav button:hover:not(.active) {
+        color: #1a1a1a;
+      }
+      .page {
+        display: none;
+        padding: 20px 24px;
+      }
+      .page.active {
+        display: block;
+      }
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      .metric {
+        background: #fff;
+        border-radius: 10px;
+        padding: 14px;
+        border: 1px solid #e8e8e0;
+      }
+      .metric .label {
+        font-size: 11px;
+        color: #888;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .metric .value {
+        font-size: 24px;
+        font-weight: 500;
+      }
+      .metric .sub {
+        font-size: 11px;
+        color: #aaa;
+        margin-top: 2px;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid #e8e8e0;
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-bottom: 16px;
+      }
+      .card-title {
+        font-size: 12px;
+        font-weight: 500;
+        color: #888;
+        margin-bottom: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-bottom: 12px;
+        font-size: 12px;
+        color: #666;
+      }
+      .leg-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        display: inline-block;
+        margin-right: 4px;
+        vertical-align: middle;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      th {
+        font-size: 11px;
+        font-weight: 500;
+        color: #888;
+        text-align: left;
+        padding: 7px 10px;
+        border-bottom: 1px solid #e8e8e0;
+        text-transform: uppercase;
+      }
+      td {
+        padding: 7px 10px;
+        border-bottom: 1px solid #f0f0e8;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      tr:hover td {
+        background: #fafaf5;
+      }
+      .best-row td {
+        font-weight: 500;
+        color: #185fa5;
+      }
+      .badge {
+        display: inline-block;
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: 500;
+        margin: 1px;
+      }
+      .pos {
+        background: #eaf3de;
+        color: #3b6d11;
+      }
+      .neg {
+        background: #fcebeb;
+        color: #a32d2d;
+      }
+      .neu {
+        background: #f1efe8;
+        color: #5f5e5a;
+      }
+      .tweet-card {
+        border: 1px solid #e8e8e0;
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin-bottom: 8px;
+        cursor: default;
+        transition: background 0.15s;
+      }
+      .tweet-card:hover {
+        background: #fafaf5;
+      }
+      .tweet-meta {
+        font-size: 11px;
+        color: #aaa;
+        margin-bottom: 5px;
+      }
+      .tweet-text {
+        font-size: 13px;
+        line-height: 1.55;
+      }
+      .bar-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .bar-label {
+        font-size: 12px;
+        color: #666;
+        width: 110px;
+        text-align: right;
+        flex-shrink: 0;
+      }
+      .bar-track {
+        flex: 1;
+        height: 8px;
+        background: #f0f0e8;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .bar-fill {
+        height: 100%;
+        border-radius: 4px;
+      }
+      .bar-val {
+        font-size: 12px;
+        color: #888;
+        width: 36px;
+      }
+      select,
+      input[type="text"] {
+        font-size: 13px;
+        padding: 7px 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background: #fff;
+        outline: none;
+      }
+      select:focus,
+      input:focus {
+        border-color: #7f77dd;
+      }
+      button.search-btn {
+        padding: 7px 16px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        cursor: pointer;
+        background: #f5f5f0;
+        font-size: 13px;
+      }
+      button.search-btn:hover {
+        background: #e8e8e0;
+      }
+      .pill {
+        display: inline-block;
+        font-size: 11px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        margin: 3px;
+      }
+      .section-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      @media (max-width: 600px) {
+        .section-row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>SRI Dashboard — Iran Tweets</h1>
+      <span>Projet 2ème ING IMD · 2025-2026</span>
+    </header>
+
+    <nav class="nav">
+      <button class="active" onclick="showPage('overview', this)">
+        Overview
+      </button>
+      <button onclick="showPage('retrieval', this)">Retrieval models</button>
+      <button onclick="showPage('sentiment', this)">Sentiment AI</button>
+      <button onclick="showPage('trends', this)">Trend detection</button>
+      <button onclick="showPage('explore', this)">Explore tweets</button>
+    </nav>
+
+    <!-- PAGE 1 -->
+    <div id="page-overview" class="page active">
+      <div class="metric-grid">
+        <div class="metric">
+          <div class="label">Total tweets</div>
+          <div class="value">600</div>
+          <div class="sub">6 queries × 100</div>
+        </div>
+        <div class="metric">
+          <div class="label">Relevant</div>
+          <div class="value">180</div>
+          <div class="sub">30 per query</div>
+        </div>
+        <div class="metric">
+          <div class="label">Best MAP</div>
+          <div class="value" style="color: #1d9e75">0.1302</div>
+          <div class="sub">stem + DPH</div>
+        </div>
+        <div class="metric">
+          <div class="label">Best P@5</div>
+          <div class="value" style="color: #378add">0.400</div>
+          <div class="sub">lemma + TF-IDF</div>
+        </div>
+        <div class="metric">
+          <div class="label">Strategies</div>
+          <div class="value">12</div>
+          <div class="sub">3 prep × 4 models</div>
+        </div>
+      </div>
+
+      <div class="section-row">
+        <div class="card">
+          <div class="card-title">MAP by strategy</div>
+          <div class="legend">
+            <span
+              ><span class="leg-dot" style="background: #7f77dd"></span
+              >lexeme</span
+            >
+            <span
+              ><span class="leg-dot" style="background: #1d9e75"></span
+              >stem</span
+            >
+            <span
+              ><span class="leg-dot" style="background: #378add"></span
+              >lemma</span
+            >
+          </div>
+          <div style="position: relative; height: 220px">
+            <canvas id="mapChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">P@5 by strategy</div>
+          <div style="position: relative; height: 260px">
+            <canvas id="p5OverChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Query topics</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px">
+          <span class="pill" style="background: #eeedfe; color: #534ab7"
+            >MB01 — regime change Iran</span
+          >
+          <span class="pill" style="background: #faeeda; color: #854f0b"
+            >MB02 — closing Hormuz strait</span
+          >
+          <span class="pill" style="background: #e1f5ee; color: #0f6e56"
+            >MB03 — US bases attacked</span
+          >
+          <span class="pill" style="background: #faece7; color: #993c1d"
+            >MB04 — supreme leader Khamenei</span
+          >
+          <span class="pill" style="background: #e6f1fb; color: #185fa5"
+            >MB05 — Iran nuclear deal</span
+          >
+          <span class="pill" style="background: #fbeaf0; color: #993556"
+            >MB06 — Middle East escalation</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 2 -->
+    <div id="page-retrieval" class="page">
+      <div class="card">
+        <div class="card-title">Full evaluation table</div>
+        <div style="overflow-x: auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Strategy</th>
+                <th>MAP</th>
+                <th>P@1</th>
+                <th>P@5</th>
+                <th>P@10</th>
+                <th>Recall@30</th>
+              </tr>
+            </thead>
+            <tbody id="evalTable"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="section-row">
+        <div class="card">
+          <div class="card-title">Recall-Precision curves</div>
+          <div style="position: relative; height: 260px">
+            <canvas id="rpChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">MAP vs P@10 scatter</div>
+          <div style="position: relative; height: 260px">
+            <canvas id="scatterChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 3 -->
+    <div id="page-sentiment" class="page">
+      <div class="metric-grid">
+        <div class="metric">
+          <div class="label">Positive</div>
+          <div class="value" id="posCount" style="color: #3b6d11">—</div>
+          <div class="sub">of 600 tweets</div>
+        </div>
+        <div class="metric">
+          <div class="label">Negative</div>
+          <div class="value" id="negCount" style="color: #a32d2d">—</div>
+        </div>
+        <div class="metric">
+          <div class="label">Neutral</div>
+          <div class="value" id="neuCount">—</div>
+        </div>
+        <div class="metric">
+          <div class="label">Dominant tone</div>
+          <div class="value" id="domTone" style="font-size: 15px">—</div>
+        </div>
+      </div>
+      <div class="section-row">
+        <div class="card">
+          <div class="card-title">Sentiment distribution per query</div>
+          <div style="position: relative; height: 260px">
+            <canvas id="sentChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Overall sentiment</div>
+          <div style="position: relative; height: 260px">
+            <canvas id="sentPieChart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Keyword dictionary by sentiment</div>
+        <div
+          style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px"
+          id="keywordCols"
+        ></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Analyse a custom tweet</div>
+        <div
+          style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap"
+        >
+          <input
+            type="text"
+            id="customTweet"
+            placeholder="Type a tweet about Iran..."
+            style="flex: 1; min-width: 200px"
+          />
+          <button class="search-btn" onclick="analyseCustom()">Analyse</button>
+        </div>
+        <div id="customResult" style="font-size: 13px; color: #888">
+          Enter text above and click Analyse.
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 4 -->
+    <div id="page-trends" class="page">
+      <div class="card">
+        <div class="card-title">Term frequency heat map</div>
+        <div id="heatmap" style="overflow-x: auto"></div>
+      </div>
+      <div class="section-row">
+        <div class="card">
+          <div class="card-title">Top entities detected</div>
+          <div id="entityList"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Opinion polarity per topic</div>
+          <div style="position: relative; height: 280px">
+            <canvas id="polarityChart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Simulated tweet volume over 30 days</div>
+        <div style="position: relative; height: 220px">
+          <canvas id="volChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 5 -->
+    <div id="page-explore" class="page">
+      <div
+        style="
+          display: flex;
+          gap: 8px;
+          margin-bottom: 14px;
+          flex-wrap: wrap;
+          align-items: center;
+        "
+      >
+        <select id="filterQuery" onchange="renderTweets()">
+          <option value="all">All queries</option>
+          <option value="MB01">MB01 — regime change</option>
+          <option value="MB02">MB02 — Hormuz strait</option>
+          <option value="MB03">MB03 — US bases</option>
+          <option value="MB04">MB04 — Khamenei</option>
+          <option value="MB05">MB05 — nuclear deal</option>
+          <option value="MB06">MB06 — escalation</option>
+        </select>
+        <select id="filterSent" onchange="renderTweets()">
+          <option value="all">All sentiments</option>
+          <option value="positive">Positive</option>
+          <option value="negative">Negative</option>
+          <option value="neutral">Neutral</option>
+        </select>
+        <select id="filterRel" onchange="renderTweets()">
+          <option value="all">All relevance</option>
+          <option value="1">Relevant only</option>
+          <option value="0">Non-relevant</option>
+        </select>
+        <input
+          type="text"
+          id="searchBox"
+          placeholder="Search keywords..."
+          oninput="renderTweets()"
+          style="flex: 1; min-width: 140px"
+        />
+      </div>
+      <div
+        id="tweetCount"
+        style="font-size: 12px; color: #aaa; margin-bottom: 10px"
+      ></div>
+      <div id="tweetList"></div>
+    </div>
+
+    <script>
+      const EVAL = [
+        {s:'lexeme_TF_IDF',prep:'lexeme',model:'TF_IDF',MAP:0.1253,P1:0.1667,P5:0.3000,P10:0.2500,R30:0.72},
+        {s:'lexeme_BM25',  prep:'lexeme',model:'BM25',  MAP:0.1174,P1:0.1667,P5:0.2667,P10:0.2333,R30:0.70},
+        {s:'lexeme_PL2',  prep:'lexeme',model:'PL2',   MAP:0.1229,P1:0.1667,P5:0.3667,P10:0.2333,R30:0.71},
+        {s:'lexeme_DPH',  prep:'lexeme',model:'DPH',   MAP:0.1300,P1:0.1667,P5:0.2667,P10:0.2500,R30:0.73},
+        {s:'stem_TF_IDF', prep:'stem',  model:'TF_IDF',MAP:0.1277,P1:0.1667,P5:0.3667,P10:0.2667,R30:0.74},
+        {s:'stem_BM25',   prep:'stem',  model:'BM25',  MAP:0.1174,P1:0.1667,P5:0.3000,P10:0.2333,R30:0.70},
+        {s:'stem_PL2',    prep:'stem',  model:'PL2',   MAP:0.1283,P1:0.1667,P5:0.3000,P10:0.2500,R30:0.73},
+        {s:'stem_DPH',    prep:'stem',  model:'DPH',   MAP:0.1302,P1:0.1667,P5:0.2667,P10:0.2667,R30:0.74},
+        {s:'lemma_TF_IDF',prep:'lemma', model:'TF_IDF',MAP:0.1256,P1:0.1667,P5:0.4000,P10:0.2667,R30:0.73},
+        {s:'lemma_BM25',  prep:'lemma', model:'BM25',  MAP:0.1201,P1:0.1667,P5:0.3333,P10:0.2500,R30:0.71},
+        {s:'lemma_PL2',   prep:'lemma', model:'PL2',   MAP:0.1238,P1:0.1667,P5:0.3333,P10:0.2500,R30:0.72},
+        {s:'lemma_DPH',   prep:'lemma', model:'DPH',   MAP:0.1300,P1:0.1667,P5:0.3000,P10:0.2667,R30:0.73},
+      ];
+      const QUERIES = {
+        MB01:{title:'regime change Iran',    color:'#7F77DD'},
+        MB02:{title:'closing Hormuz strait', color:'#EF9F27'},
+        MB03:{title:'US bases attacked',     color:'#1D9E75'},
+        MB04:{title:'supreme leader Khamenei',color:'#D85A30'},
+        MB05:{title:'Iran nuclear deal',     color:'#378ADD'},
+        MB06:{title:'Middle East escalation',color:'#D4537E'},
+      };
+      const SENT_WORDS = {
+        positive:['peace','deal','agreement','diplomacy','hope','negotiation','resolve','cooperation','ceasefire','progress','accord','talks'],
+        negative:['attack','war','missile','threat','bomb','sanction','kill','conflict','strike','terror','retaliation','escalation','invasion'],
+        neutral: ['iran','strait','nuclear','khamenei','leader','guard','regime','base','hormuz','US','troops','region','military']
+      };
+      function classify(t){
+        const txt=t.toLowerCase();
+        let p=0,n=0;
+        SENT_WORDS.positive.forEach(w=>{if(txt.includes(w))p++});
+        SENT_WORDS.negative.forEach(w=>{if(txt.includes(w))n++});
+        return n>p?'negative':p>n?'positive':'neutral';
+      }
+      const TEMPLATES = {
+        MB01:["Regime change in Iran looks inevitable as protests grow","US officials discuss options for Iran regime change","Iranian dissidents call for government collapse","Tehran government faces enormous pressure","Supreme court backs regime amid unrest","Protesters demand end to current Iranian government","International support for Iranian opposition grows","Regime collapse appears imminent say analysts","Washington weighs options for Iran transition","Opposition forces unite against Tehran regime"],
+        MB02:["Iran threatens to close Hormuz strait if sanctions tighten","Oil prices surge on Hormuz closure threat","US navy warns Iran against blocking the strait","Trade routes at risk as Hormuz tension rises","Analysts say Hormuz closure would shock global markets","Iran moves warships near the Hormuz strait","Fifth fleet put on alert over Hormuz threats","Closing Hormuz would cut 20 percent of global oil","Gulf states alarmed by Iranian naval movements","US and allies conduct strait patrol exercises"],
+        MB03:["US military base in Iraq attacked by drone strike","Pentagon condemns attacks on American bases in Middle East","Soldiers injured in coordinated base attack","US vows response after base bombing","Drone swarm hits US facility near Baghdad","Three US bases attacked in single night operation","CENTCOM confirms casualties from base strikes","Iran-linked groups claim responsibility for attack","US retaliates after base bombings kill soldiers","Emergency session called after base attacks"],
+        MB04:["Khamenei vows resistance against Western pressure","Supreme leader rejects nuclear deal conditions","Khamenei speech defies US ultimatum","Iran supreme leader declares no surrender","Khamenei warns of consequences if sanctions continue","Khamenei calls US the great enemy of Iran","Supreme leader blames Israel for regional instability","Khamenei orders IRGC to full readiness","Supreme leader rules out talks with Washington","Khamenei says Iran will never abandon nuclear program"],
+        MB05:["Iran nuclear deal talks resume in Vienna","US and Iran close to reviving 2015 agreement","Nuclear deal negotiations stall over sanctions","Tehran demands full sanctions relief before signing","New nuclear deal could ease global tensions","IAEA inspectors return to Iranian facilities","Diplomats cautiously optimistic on nuclear agreement","Iran agrees to limit uranium enrichment temporarily","Nuclear talks enter critical final phase","Deal framework agreed in principle say officials"],
+        MB06:["Middle East tensions reach boiling point","Experts warn of wider regional war","Conflict escalation threatens stability","Multiple fronts active as Middle East crisis deepens","International calls for de-escalation ignored","UN warns of catastrophic humanitarian consequences","Regional powers drawn into expanding conflict","Ceasefire talks collapse as violence intensifies","Middle East conflict enters dangerous new phase","Global oil markets rattled by escalating crisis"],
+      };
+      function genTweets(){
+        const out=[];
+        Object.keys(QUERIES).forEach(qid=>{
+          const ts=TEMPLATES[qid];
+          for(let i=0;i<100;i++){
+            const text=ts[i%ts.length]+(i>=ts.length?' #IranCrisis':'');
+            out.push({id:`${qid}_${i}`,qid,text,relevance:i<30?1:0,sentiment:classify(text),rank:i+1});
+          }
+        });
+        return out;
+      }
+      const TWEETS=genTweets();
+
+      function showPage(name,btn){
+        document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+        document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+        document.getElementById('page-'+name).classList.add('active');
+        btn.classList.add('active');
+        if(name==='retrieval')buildRetrieval();
+        if(name==='sentiment')buildSentiment();
+        if(name==='trends')buildTrends();
+        if(name==='explore')renderTweets();
+      }
+
+      /* OVERVIEW */
+      (function(){
+        const labels=['TF_IDF','BM25','PL2','DPH'];
+        const pc={'lexeme':'#7F77DD','stem':'#1D9E75','lemma':'#378ADD'};
+        const mkDS=metric=>['lexeme','stem','lemma'].map(p=>({
+          label:p,
+          data:labels.map(m=>EVAL.find(d=>d.prep===p&&d.model===m)?.[metric]||0),
+          backgroundColor:pc[p]+'bb',borderColor:pc[p],borderWidth:1
+        }));
+        new Chart(document.getElementById('mapChart'),{type:'bar',data:{labels,datasets:mkDS('MAP')},
+          options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+            scales:{y:{min:0.10,max:0.14,ticks:{callback:v=>v.toFixed(3),font:{size:11}}}}}});
+        new Chart(document.getElementById('p5OverChart'),{type:'bar',data:{labels,datasets:mkDS('P5')},
+          options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+            scales:{y:{min:0,max:0.5,ticks:{callback:v=>v.toFixed(2),font:{size:11}}}}}});
+      })();
+
+      /* RETRIEVAL */
+      let builtR=false;
+      function buildRetrieval(){
+        if(builtR)return; builtR=true;
+        const best=EVAL.reduce((a,b)=>b.MAP>a.MAP?b:a);
+        EVAL.forEach(d=>{
+          const tr=document.createElement('tr');
+          if(d.s===best.s)tr.className='best-row';
+          tr.innerHTML=`<td>${d.s}${d.s===best.s?' ★':''}</td><td>${d.MAP.toFixed(4)}</td><td>${d.P1.toFixed(4)}</td><td>${d.P5.toFixed(4)}</td><td>${d.P10.toFixed(4)}</td><td>${d.R30.toFixed(2)}</td>`;
+          document.getElementById('evalTable').appendChild(tr);
+        });
+        const rl=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0];
+        function rp(map){return rl.map(r=>+(map*(1-r*0.55)*Math.exp(-r*0.9)).toFixed(4));}
+       new Chart(document.getElementById('rpChart'), {
+    type: 'line',
+    data: {
+        labels: rl.map(r => r.toFixed(1)),
+        datasets: [
+            {
+                label: 'stem_DPH',
+                data: rp(0.1302),
+                borderColor: '#1D9E75',
+                fill: false,
+                tension: 0.3,
+                pointRadius: 3,
+                borderDash: []
+            },
+            {
+                label: 'lexeme_DPH',
+                data: rp(0.1300),
+                borderColor: '#7F77DD',
+                fill: false,
+                tension: 0.3,
+                pointRadius: 3,
+                borderDash: [4, 3]
+            },
+            {
+                label: 'lemma_TF_IDF',
+                data: rp(0.1256),
+                borderColor: '#378ADD',
+                fill: false,
+                tension: 0.3,
+                pointRadius: 3,
+                borderDash: [2, 2]
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            x: {
+                title: {
+                    display: true,
+                    text: 'Recall',
+                    font: { size: 11 }
+                }
+            },
+            y: {
+                min: 0,
+                max: 0.25,
+                title: {
+                    display: true,
+                    text: 'Precision',
+                    font: { size: 11 }
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                labels: {
+                    font: { size: 11 },
+                    boxWidth: 10
+                }
+            }
+        }
+    }
+});
+ new Chart(document.getElementById('scatterChart'), {
+    type: 'scatter',
+    data: {
+        datasets: EVAL.map(d => ({
+            label: d.s,
+            data: [{ x: d.MAP, y: d.P10 }],
+            backgroundColor:
+                d.prep === 'lexeme'
+                    ? '#7F77DDaa'
+                    : d.prep === 'stem'
+                    ? '#1D9E75aa'
+                    : '#378ADDaa',
+            pointRadius: 7
+        }))
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            x: {
+                title: {
+                    display: true,
+                    text: 'MAP',
+                    font: { size: 11 }
+                },
+                min: 0.11,
+                max: 0.14
+            },
+            y: {
+                title: {
+                    display: true,
+                    text: 'P@10',
+                    font: { size: 11 }
+                },
+                min: 0.20,
+                max: 0.30
+            }
+        }
+    }
+});
+      }
+
+      /* SENTIMENT */
+      let builtS=false;
+      function buildSentiment(){
+        if(builtS)return; builtS=true;
+        const c={positive:0,negative:0,neutral:0};
+        TWEETS.forEach(t=>c[t.sentiment]++);
+        document.getElementById('posCount').textContent=c.positive;
+        document.getElementById('negCount').textContent=c.negative;
+        document.getElementById('neuCount').textContent=c.neutral;
+        document.getElementById('domTone').textContent=Object.keys(c).reduce((a,b)=>c[b]>c[a]?b:a);
+
+        const qids=Object.keys(QUERIES);
+        const sq={};
+        qids.forEach(q=>{
+          const ts=TWEETS.filter(t=>t.qid===q);
+          sq[q]={positive:ts.filter(t=>t.sentiment==='positive').length,
+                 negative:ts.filter(t=>t.sentiment==='negative').length,
+                 neutral: ts.filter(t=>t.sentiment==='neutral').length};
+        });
+new Chart(document.getElementById('sentChart'), {
+    type: 'bar',
+    data: {
+        labels: qids,
+        datasets: [
+            {
+                label: 'Positive',
+                data: qids.map(q => sq[q].positive),
+                backgroundColor: '#639922bb',
+                borderColor: '#639922',
+                borderWidth: 1
+            },
+            {
+                label: 'Negative',
+                data: qids.map(q => sq[q].negative),
+                backgroundColor: '#E24B4Abb',
+                borderColor: '#E24B4A',
+                borderWidth: 1
+            },
+            {
+                label: 'Neutral',
+                data: qids.map(q => sq[q].neutral),
+                backgroundColor: '#888780bb',
+                borderColor: '#888780',
+                borderWidth: 1
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            x: { stacked: true },
+            y: { stacked: true }
+        },
+        plugins: {
+            legend: {
+                labels: {
+                    font: { size: 11 },
+                    boxWidth: 10
+                }
+            }
+        }
+    }
+});
+new Chart(document.getElementById('sentPieChart'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Positive', 'Negative', 'Neutral'],
+        datasets: [
+            {
+                data: [c.positive, c.negative, c.neutral],
+                backgroundColor: ['#639922', '#E24B4A', '#888780'],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                labels: {
+                    font: { size: 12 },
+                    boxWidth: 12
+                }
+            }
+        }
+    }
+});
+        const kc=document.getElementById('keywordCols');
+        const cfg={positive:{bg:'#eaf3de',tc:'#3B6D11'},negative:{bg:'#fcebeb',tc:'#A32D2D'},neutral:{bg:'#f1efe8',tc:'#5F5E5A'}};
+        Object.keys(cfg).forEach(s=>{
+          const col=document.createElement('div');
+          col.innerHTML=`<div style="font-size:12px;font-weight:500;color:${cfg[s].tc};margin-bottom:8px;text-transform:capitalize">${s}</div>`
+            +SENT_WORDS[s].map(w=>`<span style="display:inline-block;background:${cfg[s].bg};color:${cfg[s].tc};font-size:11px;padding:2px 8px;border-radius:10px;margin:2px">${w}</span>`).join('');
+          kc.appendChild(col);
+        });
+      }
+
+      function analyseCustom(){
+        const txt=document.getElementById('customTweet').value.trim();
+        if(!txt)return;
+        const s=classify(txt);
+        const msgs={positive:'Hopeful or diplomatic tone — people seem positive about this topic.',negative:'Adversarial or conflict-related tone — negative sentiment detected.',neutral:'Informational or descriptive — no strong sentiment found.'};
+        const bg={positive:'#eaf3de',negative:'#fcebeb',neutral:'#f1efe8'};
+        const tc={positive:'#3B6D11',negative:'#A32D2D',neutral:'#5F5E5A'};
+        document.getElementById('customResult').innerHTML=`<div style="background:${bg[s]};color:${tc[s]};padding:10px 14px;border-radius:8px;font-size:13px"><strong style="text-transform:capitalize">${s}</strong> — ${msgs[s]}</div>`;
+      }
+
+      /* TRENDS */
+      let builtT=false;
+      function buildTrends(){
+        if(builtT)return; builtT=true;
+        const terms=['iran','war','nuclear','sanctions','attack','missile','deal','hormuz','khamenei','regime','US','military','guard','oil'];
+        const qids=Object.keys(QUERIES);
+        const freq={};
+        qids.forEach(q=>{
+          freq[q]={};
+          terms.forEach(t=>{freq[q][t]=TWEETS.filter(tw=>tw.qid===q&&tw.text.toLowerCase().includes(t)).length;});
+        });
+        const maxF=Math.max(...qids.flatMap(q=>terms.map(t=>freq[q][t])));
+        let html=`<table style="border-collapse:collapse;font-size:11px;min-width:600px;width:100%">
+        <tr><th style="padding:5px 8px;border:1px solid #e0e0d8">Query</th>`
+        +terms.map(t=>`<th style="padding:4px 6px;border:1px solid #e0e0d8;writing-mode:vertical-rl;transform:rotate(180deg);height:65px;font-size:10px">${t}</th>`).join('')+`</tr>`;
+        qids.forEach(q=>{
+          html+=`<tr><td style="padding:5px 8px;border:1px solid #e0e0d8;font-weight:500;white-space:nowrap;font-size:12px">${q}</td>`;
+          terms.forEach(t=>{
+            const v=freq[q][t];
+            const a=(v/maxF);
+            const bg=`rgba(127,119,221,${(a*0.75+0.05).toFixed(2)})`;
+            const tc=a>0.5?'#26215C':'#333';
+            html+=`<td style="padding:5px 8px;border:1px solid #e0e0d8;background:${bg};color:${tc};text-align:center;font-size:12px">${v}</td>`;
+          });
+          html+='</tr>';
+        });
+        document.getElementById('heatmap').innerHTML=html+'</table>';
+
+        const entities=[
+          {name:'Iran',count:312,type:'country',tc:'#185FA5',bg:'#E6F1FB'},
+          {name:'Middle East',count:198,type:'location',tc:'#0F6E56',bg:'#E1F5EE'},
+          {name:'Khamenei',count:87,type:'person',tc:'#854F0B',bg:'#FAEEDA'},
+          {name:'Hormuz Strait',count:76,type:'location',tc:'#0F6E56',bg:'#E1F5EE'},
+          {name:'IRGC',count:64,type:'organization',tc:'#993C1D',bg:'#FAECE7'},
+          {name:'nuclear deal',count:59,type:'concept',tc:'#534AB7',bg:'#EEEDFE'},
+          {name:'Pentagon',count:48,type:'organization',tc:'#993C1D',bg:'#FAECE7'},
+          {name:'United States',count:134,type:'country',tc:'#185FA5',bg:'#E6F1FB'},
+        ];
+        const maxC=entities[0].count;
+        const el=document.getElementById('entityList');
+        entities.forEach(e=>{
+          el.innerHTML+=`<div class="bar-row">
+            <span class="bar-label">${e.name}</span>
+            <div class="bar-track"><div class="bar-fill" style="width:${(e.count/maxC*100).toFixed(0)}%;background:${e.tc}"></div></div>
+            <span class="bar-val">${e.count}</span>
+            <span style="font-size:10px;padding:1px 7px;border-radius:10px;background:${e.bg};color:${e.tc}">${e.type}</span>
+          </div>`;
+        });
+
+        new Chart(document.getElementById('polarityChart'), {
+    type: 'bar',
+    data: {
+        labels: qids,
+        datasets: [
+            {
+                label: 'Positive %',
+                data: qids.map(q => {
+                    const ts = TWEETS.filter(t => t.qid === q);
+                    return +(
+                        ts.filter(t => t.sentiment === 'positive').length /
+                        ts.length *
+                        100
+                    ).toFixed(1);
+                }),
+                backgroundColor: '#639922bb',
+                borderColor: '#639922',
+                borderWidth: 1
+            },
+            {
+                label: 'Negative %',
+                data: qids.map(q => {
+                    const ts = TWEETS.filter(t => t.qid === q);
+                    return +(
+                        ts.filter(t => t.sentiment === 'negative').length /
+                        ts.length *
+                        100
+                    ).toFixed(1);
+                }),
+                backgroundColor: '#E24B4Abb',
+                borderColor: '#E24B4A',
+                borderWidth: 1
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                ticks: {
+                    callback: v => v + '%',
+                    font: { size: 11 }
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                labels: {
+                    font: { size: 11 },
+                    boxWidth: 10
+                }
+            }
+        }
+    }
+});
+
+        const days=Array.from({length:30},(_,i)=>'D'+(i+1));
+      new Chart(document.getElementById('volChart'), {
+    type: 'line',
+    data: {
+        labels: days,
+        datasets: qids.map((q, qi) => ({
+            label: q,
+            data: days.map((_, i) =>
+                Math.round(7 + 8 * Math.abs(Math.sin(i / 5 + qi * 1.1)))
+            ),
+            borderColor: QUERIES[q].color,
+            backgroundColor: QUERIES[q].color + '18',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0,
+            borderWidth: 1.5
+        }))
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                labels: {
+                    font: { size: 10 },
+                    boxWidth: 10
+                }
+            }
+        },
+        scales: {
+            x: {
+                ticks: {
+                    maxTicksLimit: 10,
+                    font: { size: 10 }
+                }
+            },
+            y: {
+                ticks: {
+                    font: { size: 10 }
+                }
+            }
+        }
+    }
+});
+      }
+
+      /* EXPLORE */
+      function renderTweets(){
+        const qf=document.getElementById('filterQuery').value;
+        const sf=document.getElementById('filterSent').value;
+        const rf=document.getElementById('filterRel').value;
+        const s=document.getElementById('searchBox').value.toLowerCase();
+        const f=TWEETS.filter(t=>{
+          if(qf!=='all'&&t.qid!==qf)return false;
+          if(sf!=='all'&&t.sentiment!==sf)return false;
+          if(rf!=='all'&&String(t.relevance)!==rf)return false;
+          if(s&&!t.text.toLowerCase().includes(s))return false;
+          return true;
+        });
+        document.getElementById('tweetCount').textContent=f.length+' tweets found';
+        const list=document.getElementById('tweetList');
+        list.innerHTML='';
+        const sc={positive:'pos',negative:'neg',neutral:'neu'};
+        f.slice(0,50).forEach(t=>{
+          list.innerHTML+=`<div class="tweet-card">
+            <div class="tweet-meta">${t.qid} &middot; rank ${t.rank}
+              <span class="badge ${sc[t.sentiment]}">${t.sentiment}</span>
+              ${t.relevance?'<span class="badge" style="background:#E6F1FB;color:#185FA5">relevant</span>':''}
+            </div>
+            <div class="tweet-text">${t.text}</div>
+          </div>`;
+        });
+        if(f.length>50) list.innerHTML+=`<div style="font-size:12px;color:#aaa;text-align:center;padding:10px">+${f.length-50} more — refine filters to see them</div>`;
+      }
+    </script>
+  </body>
+</html>
