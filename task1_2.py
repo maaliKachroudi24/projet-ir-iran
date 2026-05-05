@@ -4,9 +4,11 @@ import time
 import json
 import random
 import threading
+import shutil
 from queue import Queue
 
 import pyterrier as pt
+import pandas as pd
 from playwright.sync_api import sync_playwright
 
 # ============================================================
@@ -16,6 +18,9 @@ from playwright.sync_api import sync_playwright
 TARGET_TWEETS = 100
 MAX_RETRIES = 5
 MAX_TOTAL_ATTEMPTS = 8
+
+BASE_INDEX_DIR = os.path.abspath("indexes")
+CORPUS_PATH = "collection/corpus_tweets.json"
 
 # ============================================================
 # TOPICS
@@ -46,31 +51,16 @@ attempts = {}
 lock = threading.Lock()
 
 # ============================================================
-# QUERY EXPANSION
-# ============================================================
-
-def expand_query(q):
-    return [
-        q,
-        q + " news",
-        q + " latest",
-        q + " update",
-        q + " war",
-        q + " conflict"
-    ]
-
-# ============================================================
-# SCRAPE SAFE VERSION (ANTI TIMEOUT + ANTI CRASH)
+# SCRAPING
 # ============================================================
 
 def scrape(page, query, target):
 
     url = f"https://x.com/search?q={query.replace(' ', '%20')}&src=typed_query"
 
-    # 🔥 SAFE NAVIGATION
     try:
         page.goto(url, wait_until="domcontentloaded", timeout=60000)
-    except Exception as e:
+    except:
         print(f"⚠️ goto failed: {query}")
         return []
 
@@ -127,12 +117,11 @@ def scrape(page, query, target):
                     "likes": 0
                 })
 
-                print(f"📊 {len(collected)}/100", end="\r")
+                print(f"📊 {len(collected)}/{target}", end="\r")
 
             except:
                 continue
 
-        # 🔥 SAFE SCROLL
         try:
             page.evaluate("window.scrollBy(0, 2500)")
         except:
@@ -150,7 +139,13 @@ def collect_with_retry(page, query):
 
     for attempt in range(MAX_RETRIES):
 
-        for q in expand_query(query):
+        for q in [
+            query,
+            query + " news",
+            query + " latest",
+            query + " war",
+            query + " conflict"
+        ]:
 
             print(f"\n🔄 Attempt {attempt+1} → {q}")
 
@@ -169,7 +164,7 @@ def collect_with_retry(page, query):
     return []
 
 # ============================================================
-# SAVE SAFE
+# SAVE
 # ============================================================
 
 def save():
@@ -188,7 +183,7 @@ def save():
     print(f"\n📁 SAVED → corpus={len(corpus_global)}")
 
 # ============================================================
-# WORKER (ANTI CRASH FINAL VERSION)
+# WORKER
 # ============================================================
 
 def worker(queue):
@@ -211,12 +206,11 @@ def worker(queue):
 
                 data = collect_with_retry(page, title)
 
-                if len(data) == 100:
+                if len(data) == TARGET_TWEETS:
 
                     local_qrels = []
 
                     for i, d in enumerate(data):
-
                         corpus_global.append(d)
 
                         rel = 1 if i < 30 else 0
@@ -229,7 +223,6 @@ def worker(queue):
                     print(f"✅ {qid} DONE")
 
                 else:
-
                     if attempts[qid] < MAX_TOTAL_ATTEMPTS:
                         print(f"🔁 REQUEUE {qid}")
                         queue.put(topic)
@@ -241,14 +234,12 @@ def worker(queue):
             except Exception as e:
                 print(f"🔥 THREAD ERROR: {e}")
                 queue.task_done()
-                continue
 
 # ============================================================
-# RUN
+# SCRAPING RUN (DISABLED IF YOU USE JSON)
 # ============================================================
 
 def run():
-
     queue = Queue()
 
     for t in TOPICS:
@@ -265,19 +256,89 @@ def run():
         t.join()
 
 # ============================================================
-# MAIN
+# PREPROCESS
 # ============================================================
 
-def main():
+def preprocess(text):
+    text = text.lower()
+    text = re.sub(r"[^\w\s]", " ", text)
+    return " ".join(text.split())
+
+# ============================================================
+# INDEXATION FIXED (STABLE TERRIER VERSION)
+# ============================================================
+def build_index(corpus, method):
+
+    print(f"\n📦 Indexing: {method}")
+
+    index_dir = os.path.join(BASE_INDEX_DIR, f"index_{method}")
+
+    if os.path.exists(index_dir):
+        shutil.rmtree(index_dir)
+
+    os.makedirs(index_dir, exist_ok=True)
+
+    df = pd.DataFrame(corpus)
+
+    df = df.dropna(subset=["text"])
+    df = df[df["text"].str.strip() != ""]
+    df["processed"] = df["text"].fillna("").apply(preprocess)
+
+    # 🔥 remove empty AFTER preprocessing
+    df = df[df["processed"].str.strip().astype(bool)]
+
+    # 🔥 remove very short docs (important)
+    df = df[df["processed"].str.len() > 2]
+
+    
+
+    print(f"📊 Docs: {len(df)}")
+
+    index_data = df[["id", "processed"]].rename(
+        columns={"id": "docno", "processed": "text"}
+    )
 
     if not pt.java.started():
         pt.java.init()
 
-    print("\n🚀 START SCRAPING")
+    pt.terrier.set_property("terrier.home", os.path.abspath("terrier_home"))
+    pt.terrier.set_property("terrier.index.path", BASE_INDEX_DIR)
 
-    run()
+    indexer = pt.IterDictIndexer(index_dir, meta={"docno": 50})
 
-    print("\n🎉 DONE - STABLE VERSION COMPLETED")
+    indexer.index(index_data.to_dict(orient="records"))
+
+    print(f"✅ Index {method} created")
+
+# ============================================================
+# MAIN (INDEX ONLY MODE)
+# ============================================================
+
+def main():
+
+    print("\n🚀 START SCRAPING (OPTIONAL)")
+
+    # run()  # uncomment if you want scraping again
+
+    print("\n🎉 SCRAPING SKIPPED / DONE")
+
+    print("\n🔨 START INDEXING")
+
+    if not os.path.exists(CORPUS_PATH):
+        print("❌ corpus file missing")
+        return
+
+    with open(CORPUS_PATH, "r", encoding="utf-8") as f:
+        corpus = json.load(f)
+
+    print(f"📊 Corpus loaded: {len(corpus)}")
+
+    for method in ["lexeme", "stem", "lemma"]:
+        build_index(corpus, method)
+
+    print("\n🎉 ALL DONE (SCRAPING + INDEXING)")
+
+# ============================================================
 
 if __name__ == "__main__":
     main()
