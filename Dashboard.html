@@ -288,28 +288,33 @@
       <div class="metric-grid">
         <div class="metric">
           <div class="label">Total tweets</div>
-          <div class="value">600</div>
-          <div class="sub">6 queries × 100</div>
+          <div class="value">2500</div>
+          <div class="sub">25 queries × 100</div>
         </div>
         <div class="metric">
           <div class="label">Relevant</div>
-          <div class="value">180</div>
+          <div class="value">750</div>
           <div class="sub">30 per query</div>
         </div>
         <div class="metric">
           <div class="label">Best MAP</div>
-          <div class="value" style="color: #1d9e75">0.1302</div>
-          <div class="sub">stem + DPH</div>
+          <div class="value" style="color: #1d9e75">0.0573</div>
+          <div class="sub">lemma + DPH</div>
         </div>
         <div class="metric">
           <div class="label">Best P@5</div>
-          <div class="value" style="color: #378add">0.400</div>
-          <div class="sub">lemma + TF-IDF</div>
+          <div class="value" style="color: #378add">0.072</div>
+          <div class="sub">stem + DPH</div>
         </div>
         <div class="metric">
           <div class="label">Strategies</div>
           <div class="value">12</div>
           <div class="sub">3 prep × 4 models</div>
+        </div>
+        <div class="metric">
+          <div class="label">Query topics</div>
+          <div class="value">25</div>
+          <div class="sub">MB01 – MB25</div>
         </div>
       </div>
 
@@ -343,27 +348,8 @@
       </div>
 
       <div class="card">
-        <div class="card-title">Query topics</div>
-        <div style="display: flex; flex-wrap: wrap; gap: 6px">
-          <span class="pill" style="background: #eeedfe; color: #534ab7"
-            >MB01 — regime change Iran</span
-          >
-          <span class="pill" style="background: #faeeda; color: #854f0b"
-            >MB02 — closing Hormuz strait</span
-          >
-          <span class="pill" style="background: #e1f5ee; color: #0f6e56"
-            >MB03 — US bases attacked</span
-          >
-          <span class="pill" style="background: #faece7; color: #993c1d"
-            >MB04 — supreme leader Khamenei</span
-          >
-          <span class="pill" style="background: #e6f1fb; color: #185fa5"
-            >MB05 — Iran nuclear deal</span
-          >
-          <span class="pill" style="background: #fbeaf0; color: #993556"
-            >MB06 — Middle East escalation</span
-          >
-        </div>
+        <div class="card-title">Query topics (25 queries)</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px" id="queryPills"></div>
       </div>
     </div>
 
@@ -376,11 +362,12 @@
             <thead>
               <tr>
                 <th>Strategy</th>
-                <th>MAP</th>
+                <th>MAP (AP)</th>
                 <th>P@1</th>
                 <th>P@5</th>
                 <th>P@10</th>
                 <th>Recall@30</th>
+                <th>R-Prec</th>
               </tr>
             </thead>
             <tbody id="evalTable"></tbody>
@@ -409,7 +396,7 @@
         <div class="metric">
           <div class="label">Positive</div>
           <div class="value" id="posCount" style="color: #3b6d11">—</div>
-          <div class="sub">of 600 tweets</div>
+          <div class="sub">of 2500 tweets</div>
         </div>
         <div class="metric">
           <div class="label">Negative</div>
@@ -427,7 +414,7 @@
       <div class="section-row">
         <div class="card">
           <div class="card-title">Sentiment distribution per query</div>
-          <div style="position: relative; height: 260px">
+          <div style="position: relative; height: 320px">
             <canvas id="sentChart"></canvas>
           </div>
         </div>
@@ -477,7 +464,7 @@
         </div>
         <div class="card">
           <div class="card-title">Opinion polarity per topic</div>
-          <div style="position: relative; height: 280px">
+          <div style="position: relative; height: 340px">
             <canvas id="polarityChart"></canvas>
           </div>
         </div>
@@ -503,12 +490,31 @@
       >
         <select id="filterQuery" onchange="renderTweets()">
           <option value="all">All queries</option>
-          <option value="MB01">MB01 — regime change</option>
-          <option value="MB02">MB02 — Hormuz strait</option>
-          <option value="MB03">MB03 — US bases</option>
-          <option value="MB04">MB04 — Khamenei</option>
-          <option value="MB05">MB05 — nuclear deal</option>
-          <option value="MB06">MB06 — escalation</option>
+          <option value="MB01">MB01 — regime change Iran</option>
+          <option value="MB02">MB02 — closing Hormuz strait</option>
+          <option value="MB03">MB03 — US bases attacked</option>
+          <option value="MB04">MB04 — supreme leader Khamenei</option>
+          <option value="MB05">MB05 — Iran nuclear deal</option>
+          <option value="MB06">MB06 — Middle East escalation</option>
+          <option value="MB07">MB07 — Iran Israel conflict</option>
+          <option value="MB08">MB08 — US Iran tensions</option>
+          <option value="MB09">MB09 — oil prices Middle East war</option>
+          <option value="MB10">MB10 — Gulf security crisis</option>
+          <option value="MB11">MB11 — nuclear sanctions Iran</option>
+          <option value="MB12">MB12 — Strait of Hormuz blockade</option>
+          <option value="MB13">MB13 — Hezbollah Israel war</option>
+          <option value="MB14">MB14 — Yemen Houthis attacks</option>
+          <option value="MB15">MB15 — US military bases Middle East</option>
+          <option value="MB16">MB16 — diplomatic talks Iran US</option>
+          <option value="MB17">MB17 — missile attacks Gulf region</option>
+          <option value="MB18">MB18 — OPEC oil disruption</option>
+          <option value="MB19">MB19 — Israel Iran escalation news</option>
+          <option value="MB20">MB20 — Iran proxy wars</option>
+          <option value="MB21">MB21 — Middle East crisis</option>
+          <option value="MB22">MB22 — Tehran protests regime</option>
+          <option value="MB23">MB23 — sanctions Iran economy</option>
+          <option value="MB24">MB24 — oil shipping threats Gulf</option>
+          <option value="MB25">MB25 — US foreign policy Iran</option>
         </select>
         <select id="filterSent" onchange="renderTweets()">
           <option value="all">All sentiments</option>
@@ -537,40 +543,65 @@
     </div>
 
     <script>
+      /* ── EVAL DATA (from evaluation_summary.csv — 25 queries) ── */
       const EVAL = [
-        {s:'lexeme_TF_IDF',prep:'lexeme',model:'TF_IDF',MAP:0.1253,P1:0.1667,P5:0.3000,P10:0.2500,R30:0.72},
-        {s:'lexeme_BM25',  prep:'lexeme',model:'BM25',  MAP:0.1174,P1:0.1667,P5:0.2667,P10:0.2333,R30:0.70},
-        {s:'lexeme_PL2',  prep:'lexeme',model:'PL2',   MAP:0.1229,P1:0.1667,P5:0.3667,P10:0.2333,R30:0.71},
-        {s:'lexeme_DPH',  prep:'lexeme',model:'DPH',   MAP:0.1300,P1:0.1667,P5:0.2667,P10:0.2500,R30:0.73},
-        {s:'stem_TF_IDF', prep:'stem',  model:'TF_IDF',MAP:0.1277,P1:0.1667,P5:0.3667,P10:0.2667,R30:0.74},
-        {s:'stem_BM25',   prep:'stem',  model:'BM25',  MAP:0.1174,P1:0.1667,P5:0.3000,P10:0.2333,R30:0.70},
-        {s:'stem_PL2',    prep:'stem',  model:'PL2',   MAP:0.1283,P1:0.1667,P5:0.3000,P10:0.2500,R30:0.73},
-        {s:'stem_DPH',    prep:'stem',  model:'DPH',   MAP:0.1302,P1:0.1667,P5:0.2667,P10:0.2667,R30:0.74},
-        {s:'lemma_TF_IDF',prep:'lemma', model:'TF_IDF',MAP:0.1256,P1:0.1667,P5:0.4000,P10:0.2667,R30:0.73},
-        {s:'lemma_BM25',  prep:'lemma', model:'BM25',  MAP:0.1201,P1:0.1667,P5:0.3333,P10:0.2500,R30:0.71},
-        {s:'lemma_PL2',   prep:'lemma', model:'PL2',   MAP:0.1238,P1:0.1667,P5:0.3333,P10:0.2500,R30:0.72},
-        {s:'lemma_DPH',   prep:'lemma', model:'DPH',   MAP:0.1300,P1:0.1667,P5:0.3000,P10:0.2667,R30:0.73},
+        {s:'lexeme_TF_IDF',prep:'lexeme',model:'TF_IDF',MAP:0.0208,P1:0.08, P5:0.064,P10:0.060,R30:0.0507,Rprec:0.0507},
+        {s:'lexeme_BM25',  prep:'lexeme',model:'BM25',  MAP:0.0194,P1:0.08, P5:0.048,P10:0.064,R30:0.0467,Rprec:0.0467},
+        {s:'lexeme_PL2',  prep:'lexeme',model:'PL2',   MAP:0.0206,P1:0.08, P5:0.048,P10:0.056,R30:0.0520,Rprec:0.0520},
+        {s:'lexeme_DPH',  prep:'lexeme',model:'DPH',   MAP:0.0185,P1:0.00, P5:0.064,P10:0.064,R30:0.0560,Rprec:0.0560},
+        {s:'stem_TF_IDF', prep:'stem',  model:'TF_IDF',MAP:0.0199,P1:0.08, P5:0.064,P10:0.048,R30:0.0520,Rprec:0.0520},
+        {s:'stem_BM25',   prep:'stem',  model:'BM25',  MAP:0.0186,P1:0.08, P5:0.048,P10:0.060,R30:0.0480,Rprec:0.0480},
+        {s:'stem_PL2',    prep:'stem',  model:'PL2',   MAP:0.0201,P1:0.08, P5:0.056,P10:0.052,R30:0.0533,Rprec:0.0533},
+        {s:'stem_DPH',    prep:'stem',  model:'DPH',   MAP:0.0182,P1:0.00, P5:0.072,P10:0.068,R30:0.0533,Rprec:0.0533},
+        {s:'lemma_TF_IDF',prep:'lemma', model:'TF_IDF',MAP:0.0207,P1:0.08, P5:0.064,P10:0.052,R30:0.0520,Rprec:0.0520},
+        {s:'lemma_BM25',  prep:'lemma', model:'BM25',  MAP:0.0191,P1:0.08, P5:0.048,P10:0.060,R30:0.0480,Rprec:0.0480},
+        {s:'lemma_PL2',   prep:'lemma', model:'PL2',   MAP:0.0204,P1:0.08, P5:0.048,P10:0.052,R30:0.0520,Rprec:0.0520},
+        {s:'lemma_DPH',   prep:'lemma', model:'DPH',   MAP:0.0192,P1:0.00, P5:0.064,P10:0.064,R30:0.0573,Rprec:0.0573},
       ];
+
+      /* ── 25 QUERIES ── */
       const QUERIES = {
-        MB01:{title:'regime change Iran',    color:'#7F77DD'},
-        MB02:{title:'closing Hormuz strait', color:'#EF9F27'},
-        MB03:{title:'US bases attacked',     color:'#1D9E75'},
-        MB04:{title:'supreme leader Khamenei',color:'#D85A30'},
-        MB05:{title:'Iran nuclear deal',     color:'#378ADD'},
-        MB06:{title:'Middle East escalation',color:'#D4537E'},
+        MB01:{title:'regime change Iran',         color:'#7F77DD'},
+        MB02:{title:'closing Hormuz strait',      color:'#EF9F27'},
+        MB03:{title:'US bases attacked',          color:'#1D9E75'},
+        MB04:{title:'supreme leader Khamenei',    color:'#D85A30'},
+        MB05:{title:'Iran nuclear deal',          color:'#378ADD'},
+        MB06:{title:'Middle East escalation',     color:'#D4537E'},
+        MB07:{title:'Iran Israel conflict',       color:'#9B59B6'},
+        MB08:{title:'US Iran tensions',           color:'#E74C3C'},
+        MB09:{title:'oil prices Middle East war', color:'#F39C12'},
+        MB10:{title:'Gulf security crisis',       color:'#16A085'},
+        MB11:{title:'nuclear sanctions Iran',     color:'#2980B9'},
+        MB12:{title:'Strait of Hormuz blockade',  color:'#D35400'},
+        MB13:{title:'Hezbollah Israel war',       color:'#C0392B'},
+        MB14:{title:'Yemen Houthis attacks',      color:'#8E44AD'},
+        MB15:{title:'US military bases Middle East',color:'#27AE60'},
+        MB16:{title:'diplomatic talks Iran US',   color:'#2ECC71'},
+        MB17:{title:'missile attacks Gulf region',color:'#E67E22'},
+        MB18:{title:'OPEC oil disruption',        color:'#F1C40F'},
+        MB19:{title:'Israel Iran escalation news',color:'#1ABC9C'},
+        MB20:{title:'Iran proxy wars',            color:'#E91E63'},
+        MB21:{title:'Middle East crisis',         color:'#3F51B5'},
+        MB22:{title:'Tehran protests regime',     color:'#FF5722'},
+        MB23:{title:'sanctions Iran economy',     color:'#607D8B'},
+        MB24:{title:'oil shipping threats Gulf',  color:'#795548'},
+        MB25:{title:'US foreign policy Iran',     color:'#455A64'},
       };
-      const SENT_WORDS = {
-        positive:['peace','deal','agreement','diplomacy','hope','negotiation','resolve','cooperation','ceasefire','progress','accord','talks'],
-        negative:['attack','war','missile','threat','bomb','sanction','kill','conflict','strike','terror','retaliation','escalation','invasion'],
-        neutral: ['iran','strait','nuclear','khamenei','leader','guard','regime','base','hormuz','US','troops','region','military']
-      };
-      function classify(t){
-        const txt=t.toLowerCase();
-        let p=0,n=0;
-        SENT_WORDS.positive.forEach(w=>{if(txt.includes(w))p++});
-        SENT_WORDS.negative.forEach(w=>{if(txt.includes(w))n++});
-        return n>p?'negative':p>n?'positive':'neutral';
-      }
+
+      /* ── QUERY PILL COLORS ── */
+      const PILL_STYLES = [
+        {bg:'#eeedfe',tc:'#534ab7'},{bg:'#faeeda',tc:'#854f0b'},{bg:'#e1f5ee',tc:'#0f6e56'},
+        {bg:'#faece7',tc:'#993c1d'},{bg:'#e6f1fb',tc:'#185fa5'},{bg:'#fbeaf0',tc:'#993556'},
+        {bg:'#f3eafe',tc:'#6a1fb5'},{bg:'#fce8e8',tc:'#a11616'},{bg:'#fef6e0',tc:'#7a5500'},
+        {bg:'#e0f7f3',tc:'#0b5c4a'},{bg:'#deeffe',tc:'#0d4d8a'},{bg:'#fde8d8',tc:'#8b2e00'},
+        {bg:'#fde8e8',tc:'#8b0000'},{bg:'#f0e5fc',tc:'#5a1080'},{bg:'#e0f5e8',tc:'#0a4f2a'},
+        {bg:'#d9f8e8',tc:'#0a4a1e'},{bg:'#fde9d1',tc:'#7a3800'},{bg:'#fef9d0',tc:'#6a5c00'},
+        {bg:'#d9f5f0',tc:'#0a4a40'},{bg:'#fde0ed',tc:'#7a0030'},{bg:'#e0e8fc',tc:'#1a2e8a'},
+        {bg:'#fde4d8',tc:'#7a1f00'},{bg:'#e8eef2',tc:'#2b4050'},{bg:'#ede8e4',tc:'#4a2800'},
+        {bg:'#e4eaed',tc:'#1a2d35'},
+      ];
+
+      /* ── TWEET TEMPLATES for all 25 queries ── */
       const TEMPLATES = {
         MB01:["Regime change in Iran looks inevitable as protests grow","US officials discuss options for Iran regime change","Iranian dissidents call for government collapse","Tehran government faces enormous pressure","Supreme court backs regime amid unrest","Protesters demand end to current Iranian government","International support for Iranian opposition grows","Regime collapse appears imminent say analysts","Washington weighs options for Iran transition","Opposition forces unite against Tehran regime"],
         MB02:["Iran threatens to close Hormuz strait if sanctions tighten","Oil prices surge on Hormuz closure threat","US navy warns Iran against blocking the strait","Trade routes at risk as Hormuz tension rises","Analysts say Hormuz closure would shock global markets","Iran moves warships near the Hormuz strait","Fifth fleet put on alert over Hormuz threats","Closing Hormuz would cut 20 percent of global oil","Gulf states alarmed by Iranian naval movements","US and allies conduct strait patrol exercises"],
@@ -578,7 +609,41 @@
         MB04:["Khamenei vows resistance against Western pressure","Supreme leader rejects nuclear deal conditions","Khamenei speech defies US ultimatum","Iran supreme leader declares no surrender","Khamenei warns of consequences if sanctions continue","Khamenei calls US the great enemy of Iran","Supreme leader blames Israel for regional instability","Khamenei orders IRGC to full readiness","Supreme leader rules out talks with Washington","Khamenei says Iran will never abandon nuclear program"],
         MB05:["Iran nuclear deal talks resume in Vienna","US and Iran close to reviving 2015 agreement","Nuclear deal negotiations stall over sanctions","Tehran demands full sanctions relief before signing","New nuclear deal could ease global tensions","IAEA inspectors return to Iranian facilities","Diplomats cautiously optimistic on nuclear agreement","Iran agrees to limit uranium enrichment temporarily","Nuclear talks enter critical final phase","Deal framework agreed in principle say officials"],
         MB06:["Middle East tensions reach boiling point","Experts warn of wider regional war","Conflict escalation threatens stability","Multiple fronts active as Middle East crisis deepens","International calls for de-escalation ignored","UN warns of catastrophic humanitarian consequences","Regional powers drawn into expanding conflict","Ceasefire talks collapse as violence intensifies","Middle East conflict enters dangerous new phase","Global oil markets rattled by escalating crisis"],
+        MB07:["Iran fires missiles at Israeli territory in retaliation","Israel launches airstrikes on Iranian nuclear sites","Iran Israel conflict enters most dangerous phase yet","Tehran vows massive retaliation against Israeli attacks","Israeli Iron Dome intercepts Iranian missile barrage","Iran and Israel exchange fire across multiple fronts","World leaders call for restraint as Iran Israel war escalates","Iran deploys advanced drones against Israeli positions","Israel confirms strikes on Iranian military infrastructure","Diplomatic efforts fail to halt Iran Israel escalation"],
+        MB08:["US imposes new sweeping sanctions on Iran","Washington and Tehran exchange sharp diplomatic warnings","US Iran tensions highest since 2020 Soleimani killing","Biden administration reviews military options against Iran","Iran vows asymmetric response to US pressure","Diplomatic back channels between US and Iran reportedly active","US naval buildup in Gulf signals pressure on Tehran","Iran calls US threats an act of war","Washington freezes Iranian assets held in US banks","US Iran standoff risks spiraling into open conflict"],
+        MB09:["Oil prices spike as Middle East war fears grow","Brent crude jumps on news of Gulf conflict","Analysts warn of oil shock if Hormuz closes","OPEC emergency meeting called over Middle East fighting","Energy markets rattled by Iran conflict escalation","Oil at six-month high amid Middle East war risk","Iran conflict could push oil above 120 dollars","Gulf producers brace for supply disruption","Middle East war fears send oil futures surging","Traders price in significant conflict risk in Gulf region"],
+        MB10:["Gulf states raise security alert to highest level","Regional security summit called amid Gulf crisis","Naval incidents multiply in Gulf waters","Gulf cooperation council issues emergency statement","Iran-backed militia threatens Gulf shipping lanes","US allies in Gulf increase military readiness","Analysts warn Gulf security architecture under strain","Iran deploys submarines in Gulf amid crisis","Diplomatic efforts to stabilize Gulf situation intensify","Gulf crisis threatens regional economic stability"],
+        MB11:["New US sanctions target Iranian oil exports","EU imposes additional nuclear-related sanctions on Iran","Iran economy contracts sharply under international sanctions","Tehran defies new round of nuclear sanctions","Sanctions cripple Iranian banking and trade networks","Iran finds new ways to evade Western sanctions","Nuclear sanctions push Iran closer to Russia and China","Iran nuclear program advances despite tightening sanctions","Sanctions relief key sticking point in nuclear talks","Economists warn sanctions causing humanitarian crisis in Iran"],
+        MB12:["Iran blockades Strait of Hormuz in military exercise","Hormuz blockade threat sends shockwaves through energy markets","US Navy ready to reopen Hormuz if Iran blocks it","Hormuz strait blockade could trigger global recession","Iran signals readiness to shut Hormuz in conflict","Allied navies conduct freedom of navigation in Hormuz","Hormuz blockade scenario war-gamed by Pentagon","Iran builds capabilities to mine Hormuz strait","Insurance premiums skyrocket over Hormuz blockade fears","Hormuz strait central to any Iran conflict scenario"],
+        MB13:["Hezbollah launches massive rocket barrage at Israel","Israel invades Lebanon targeting Hezbollah strongholds","Hezbollah activates full war footing against Israel","Hezbollah Iran coordination deepens as war expands","Israel Hezbollah war triggers regional alarm","Hezbollah deploys precision missiles against Israeli cities","Thousands flee south Lebanon amid Israel Hezbollah war","Hezbollah gains ground despite Israeli air campaign","Iran supplies Hezbollah with advanced air defense systems","Hezbollah Israel ceasefire talks collapse again"],
+        MB14:["Houthis attack Red Sea shipping lanes with drones","Yemen Houthis fire ballistic missiles at Israel","US Navy shoots down Houthi drones in Red Sea","Houthi attacks disrupt global shipping routes","Iran-backed Houthis expand maritime attack capabilities","International coalition forms to counter Houthi threats","Houthi attacks force ships to reroute around Africa","UN condemns Houthi strikes on civilian vessels","Houthis claim responsibility for oil tanker attack","Red Sea crisis deepens as Houthi attacks continue"],
+        MB15:["US bolsters military presence across Middle East bases","Pentagon sends additional troops to Gulf region","American bases in Middle East on heightened alert","US military reviews force protection at regional bases","Iran-linked groups target US facilities in Syria and Iraq","US reinforces air defenses at key Middle East bases","Troop surge ordered after attacks on US positions","US military footprint in Middle East under scrutiny","Senators question cost of US bases in Middle East","US base in Jordan attacked killing American soldiers"],
+        MB16:["Secret diplomatic talks between US and Iran reported","Iran and US exchange messages through Swiss intermediary","Diplomatic progress on Iran nuclear issue cautiously welcomed","Iran demands written security guarantees before talks proceed","US envoy holds indirect talks with Iranian counterpart","Diplomatic window opening on Iran nuclear dispute","Back-channel Iran US talks focus on prisoner swap","Iran signals openness to resumed diplomacy on nuclear file","US Secretary of State signals readiness for Iran engagement","Diplomatic solution still possible say Iran nuclear negotiators"],
+        MB17:["Iran launches ballistic missile attack on Gulf base","Missile barrage hits oil infrastructure in Gulf region","US intercepts Iranian cruise missiles over Gulf waters","Gulf states targeted in coordinated missile strikes","Iran tests long-range missiles in Gulf exercise","Missile attacks threaten Gulf state capitals","Advanced Iranian missiles now reach all Gulf targets","Gulf missile defense systems scramble to respond","Missile attack on Saudi oil facility shocks markets","Iran missile capabilities far exceed previous estimates"],
+        MB18:["OPEC meeting fails to stabilize oil prices amid war","Iran conflict forces OPEC to convene emergency session","OPEC production cuts deepen amid Middle East crisis","Oil cartel warns of supply shock if conflict spreads","OPEC unity tested as Iran conflict disrupts exports","Saudi Arabia refuses OPEC increase despite oil price spike","OPEC member states divided over Iran crisis response","Oil market fundamentals overwhelmed by geopolitical risk","OPEC powerless to offset Iran supply disruption","OPEC meeting ends without agreement on crisis response"],
+        MB19:["Israel Iran escalation reaches unprecedented level","Latest Israel Iran exchange most serious yet","Iran Iran escalation cycle shows no signs of ending","World watches anxiously as Israel Iran clash intensifies","Israel Iran conflict risks drawing in regional powers","Iran Iran escalation news dominates global headlines","Analysts fear Israel Iran exchange could trigger wider war","Israel Iran military balance shifting say experts","Iran boosts air defenses after Israel strikes","Israel Iran conflict reshaping Middle East security order"],
+        MB20:["Iran expands proxy network across Middle East","Iran-backed militias active in Iraq Syria Lebanon Yemen","Iran proxy strategy stretches US and Israeli resources","Proxy warfare allows Iran to fight without direct confrontation","US targets Iran proxy commanders in airstrike","Iran proxy wars destabilize multiple Arab states","Iran proxies coordinate attacks across multiple fronts","Regional states alarmed by Iran proxy expansion","Iran proxies threaten Gulf state governments","Iran proxy network more potent than ever say analysts"],
+        MB21:["Middle East crisis enters critical new phase","Global leaders gather for emergency Middle East summit","Middle East crisis threatens world economic stability","UN Security Council meets on escalating Middle East crisis","Middle East crisis humanitarian toll mounts","International aid agencies overwhelmed by Middle East crisis","Middle East crisis reshapes global energy markets","Refugees fleeing Middle East crisis overwhelm neighbors","Middle East crisis fuels extremist recruitment worldwide","No end in sight to deepening Middle East crisis"],
+        MB22:["Tehran protests erupt over economic hardship and repression","Security forces crack down on Tehran demonstrations","Tehran protests spread to other Iranian cities","Regime deploys IRGC to crush Tehran protest movement","Tehran protests largest since 2019 say observers","Women and youth lead Tehran protests against regime","Tehran protests challenge legitimacy of Islamic Republic","Regime blocks internet to contain Tehran protest news","International solidarity with Tehran protesters grows","Tehran protest leaders arrested in overnight raids"],
+        MB23:["Sanctions cripple Iranian economy say new data","Iran rial hits record low as sanctions bite","US Treasury expands sanctions list targeting Iran","Iranian businesses collapse under weight of sanctions","Sanctions push Iran toward economic crisis","Iran economy shrinks for third year under sanctions","Sanctions enforcement tightened closing Iranian loopholes","Iran seeks to diversify economy away from oil amid sanctions","Young Iranians hardest hit by economic sanctions","UN report warns Iran sanctions causing civilian harm"],
+        MB24:["Iran threatens to attack oil tankers in Gulf of Oman","Gulf oil shipments face growing Iranian interference","Tanker seized by Iranian forces in Strait of Hormuz","Oil shipping insurers hike premiums over Gulf threats","Iran navy shadows international tankers in Gulf","Piracy and seizures threaten Gulf oil routes","US Navy escorts tankers through contested Gulf waters","Iran uses tanker seizures as diplomatic leverage","Gulf oil shipping routes most dangerous in decades","Major energy companies reroute tankers to avoid Iranian forces"],
+        MB25:["Biden administration releases new Iran policy framework","US Iran policy debate intensifies in Washington","Congress divided over Iran nuclear deal approach","US Iran policy review orders full intelligence assessment","Former officials criticize US Iran policy as incoherent","New US Iran policy seeks to combine pressure and diplomacy","Washington lobbied heavily over Iran policy direction","US Iran policy influenced by Israeli and Saudi concerns","Experts say US Iran policy lacks credible deterrence","Next US election could reshape Iran foreign policy entirely"],
       };
+
+      const SENT_WORDS = {
+        positive:['peace','deal','agreement','diplomacy','hope','negotiation','resolve','cooperation','ceasefire','progress','accord','talks'],
+        negative:['attack','war','missile','threat','bomb','sanction','kill','conflict','strike','terror','retaliation','escalation','invasion'],
+        neutral: ['iran','strait','nuclear','khamenei','leader','guard','regime','base','hormuz','US','troops','region','military']
+      };
+
+      function classify(t){
+        const txt=t.toLowerCase();
+        let p=0,n=0;
+        SENT_WORDS.positive.forEach(w=>{if(txt.includes(w))p++;});
+        SENT_WORDS.negative.forEach(w=>{if(txt.includes(w))n++;});
+        return n>p?'negative':p>n?'positive':'neutral';
+      }
+
       function genTweets(){
         const out=[];
         Object.keys(QUERIES).forEach(qid=>{
@@ -592,6 +657,15 @@
       }
       const TWEETS=genTweets();
 
+      /* ── BUILD QUERY PILLS ── */
+      (function(){
+        const container=document.getElementById('queryPills');
+        Object.keys(QUERIES).forEach((qid,i)=>{
+          const st=PILL_STYLES[i];
+          container.innerHTML+=`<span class="pill" style="background:${st.bg};color:${st.tc}">${qid} — ${QUERIES[qid].title}</span>`;
+        });
+      })();
+
       function showPage(name,btn){
         document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
         document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
@@ -603,7 +677,7 @@
         if(name==='explore')renderTweets();
       }
 
-      /* OVERVIEW */
+      /* ── OVERVIEW CHARTS ── */
       (function(){
         const labels=['TF_IDF','BM25','PL2','DPH'];
         const pc={'lexeme':'#7F77DD','stem':'#1D9E75','lemma':'#378ADD'};
@@ -614,13 +688,13 @@
         }));
         new Chart(document.getElementById('mapChart'),{type:'bar',data:{labels,datasets:mkDS('MAP')},
           options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-            scales:{y:{min:0.10,max:0.14,ticks:{callback:v=>v.toFixed(3),font:{size:11}}}}}});
+            scales:{y:{min:0.015,max:0.025,ticks:{callback:v=>v.toFixed(4),font:{size:11}}}}}});
         new Chart(document.getElementById('p5OverChart'),{type:'bar',data:{labels,datasets:mkDS('P5')},
           options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-            scales:{y:{min:0,max:0.5,ticks:{callback:v=>v.toFixed(2),font:{size:11}}}}}});
+            scales:{y:{min:0,max:0.10,ticks:{callback:v=>v.toFixed(3),font:{size:11}}}}}});
       })();
 
-      /* RETRIEVAL */
+      /* ── RETRIEVAL ── */
       let builtR=false;
       function buildRetrieval(){
         if(builtR)return; builtR=true;
@@ -628,122 +702,52 @@
         EVAL.forEach(d=>{
           const tr=document.createElement('tr');
           if(d.s===best.s)tr.className='best-row';
-          tr.innerHTML=`<td>${d.s}${d.s===best.s?' ★':''}</td><td>${d.MAP.toFixed(4)}</td><td>${d.P1.toFixed(4)}</td><td>${d.P5.toFixed(4)}</td><td>${d.P10.toFixed(4)}</td><td>${d.R30.toFixed(2)}</td>`;
+          tr.innerHTML=`<td>${d.s}${d.s===best.s?' ★':''}</td><td>${d.MAP.toFixed(4)}</td><td>${d.P1.toFixed(2)}</td><td>${d.P5.toFixed(3)}</td><td>${d.P10.toFixed(3)}</td><td>${d.R30.toFixed(4)}</td><td>${d.Rprec.toFixed(4)}</td>`;
           document.getElementById('evalTable').appendChild(tr);
         });
         const rl=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0];
         function rp(map){return rl.map(r=>+(map*(1-r*0.55)*Math.exp(-r*0.9)).toFixed(4));}
-       new Chart(document.getElementById('rpChart'), {
-    type: 'line',
-    data: {
-        labels: rl.map(r => r.toFixed(1)),
-        datasets: [
-            {
-                label: 'stem_DPH',
-                data: rp(0.1302),
-                borderColor: '#1D9E75',
-                fill: false,
-                tension: 0.3,
-                pointRadius: 3,
-                borderDash: []
+        new Chart(document.getElementById('rpChart'),{
+          type:'line',
+          data:{
+            labels:rl.map(r=>r.toFixed(1)),
+            datasets:[
+              {label:'lemma_DPH',data:rp(0.0192),borderColor:'#378ADD',fill:false,tension:0.3,pointRadius:3,borderDash:[]},
+              {label:'lexeme_TF_IDF',data:rp(0.0208),borderColor:'#7F77DD',fill:false,tension:0.3,pointRadius:3,borderDash:[4,3]},
+              {label:'stem_DPH',data:rp(0.0182),borderColor:'#1D9E75',fill:false,tension:0.3,pointRadius:3,borderDash:[2,2]}
+            ]
+          },
+          options:{
+            responsive:true,maintainAspectRatio:false,
+            scales:{
+              x:{title:{display:true,text:'Recall',font:{size:11}}},
+              y:{min:0,max:0.04,title:{display:true,text:'Precision',font:{size:11}}}
             },
-            {
-                label: 'lexeme_DPH',
-                data: rp(0.1300),
-                borderColor: '#7F77DD',
-                fill: false,
-                tension: 0.3,
-                pointRadius: 3,
-                borderDash: [4, 3]
-            },
-            {
-                label: 'lemma_TF_IDF',
-                data: rp(0.1256),
-                borderColor: '#378ADD',
-                fill: false,
-                tension: 0.3,
-                pointRadius: 3,
-                borderDash: [2, 2]
+            plugins:{legend:{labels:{font:{size:11},boxWidth:10}}}
+          }
+        });
+        new Chart(document.getElementById('scatterChart'),{
+          type:'scatter',
+          data:{
+            datasets:EVAL.map(d=>({
+              label:d.s,
+              data:[{x:d.MAP,y:d.P10}],
+              backgroundColor:d.prep==='lexeme'?'#7F77DDaa':d.prep==='stem'?'#1D9E75aa':'#378ADDaa',
+              pointRadius:7
+            }))
+          },
+          options:{
+            responsive:true,maintainAspectRatio:false,
+            plugins:{legend:{display:false}},
+            scales:{
+              x:{title:{display:true,text:'MAP',font:{size:11}},min:0.015,max:0.025},
+              y:{title:{display:true,text:'P@10',font:{size:11}},min:0.04,max:0.08}
             }
-        ]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            x: {
-                title: {
-                    display: true,
-                    text: 'Recall',
-                    font: { size: 11 }
-                }
-            },
-            y: {
-                min: 0,
-                max: 0.25,
-                title: {
-                    display: true,
-                    text: 'Precision',
-                    font: { size: 11 }
-                }
-            }
-        },
-        plugins: {
-            legend: {
-                labels: {
-                    font: { size: 11 },
-                    boxWidth: 10
-                }
-            }
-        }
-    }
-});
- new Chart(document.getElementById('scatterChart'), {
-    type: 'scatter',
-    data: {
-        datasets: EVAL.map(d => ({
-            label: d.s,
-            data: [{ x: d.MAP, y: d.P10 }],
-            backgroundColor:
-                d.prep === 'lexeme'
-                    ? '#7F77DDaa'
-                    : d.prep === 'stem'
-                    ? '#1D9E75aa'
-                    : '#378ADDaa',
-            pointRadius: 7
-        }))
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: { display: false }
-        },
-        scales: {
-            x: {
-                title: {
-                    display: true,
-                    text: 'MAP',
-                    font: { size: 11 }
-                },
-                min: 0.11,
-                max: 0.14
-            },
-            y: {
-                title: {
-                    display: true,
-                    text: 'P@10',
-                    font: { size: 11 }
-                },
-                min: 0.20,
-                max: 0.30
-            }
-        }
-    }
-});
+          }
+        });
       }
 
-      /* SENTIMENT */
+      /* ── SENTIMENT ── */
       let builtS=false;
       function buildSentiment(){
         if(builtS)return; builtS=true;
@@ -753,7 +757,6 @@
         document.getElementById('negCount').textContent=c.negative;
         document.getElementById('neuCount').textContent=c.neutral;
         document.getElementById('domTone').textContent=Object.keys(c).reduce((a,b)=>c[b]>c[a]?b:a);
-
         const qids=Object.keys(QUERIES);
         const sq={};
         qids.forEach(q=>{
@@ -762,77 +765,30 @@
                  negative:ts.filter(t=>t.sentiment==='negative').length,
                  neutral: ts.filter(t=>t.sentiment==='neutral').length};
         });
-new Chart(document.getElementById('sentChart'), {
-    type: 'bar',
-    data: {
-        labels: qids,
-        datasets: [
-            {
-                label: 'Positive',
-                data: qids.map(q => sq[q].positive),
-                backgroundColor: '#639922bb',
-                borderColor: '#639922',
-                borderWidth: 1
-            },
-            {
-                label: 'Negative',
-                data: qids.map(q => sq[q].negative),
-                backgroundColor: '#E24B4Abb',
-                borderColor: '#E24B4A',
-                borderWidth: 1
-            },
-            {
-                label: 'Neutral',
-                data: qids.map(q => sq[q].neutral),
-                backgroundColor: '#888780bb',
-                borderColor: '#888780',
-                borderWidth: 1
-            }
-        ]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            x: { stacked: true },
-            y: { stacked: true }
-        },
-        plugins: {
-            legend: {
-                labels: {
-                    font: { size: 11 },
-                    boxWidth: 10
-                }
-            }
-        }
-    }
-});
-new Chart(document.getElementById('sentPieChart'), {
-    type: 'doughnut',
-    data: {
-        labels: ['Positive', 'Negative', 'Neutral'],
-        datasets: [
-            {
-                data: [c.positive, c.negative, c.neutral],
-                backgroundColor: ['#639922', '#E24B4A', '#888780'],
-                borderWidth: 2,
-                borderColor: '#fff'
-            }
-        ]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                labels: {
-                    font: { size: 12 },
-                    boxWidth: 12
-                }
-            }
-        }
-    }
-});
+        new Chart(document.getElementById('sentChart'),{
+          type:'bar',
+          data:{
+            labels:qids,
+            datasets:[
+              {label:'Positive',data:qids.map(q=>sq[q].positive),backgroundColor:'#639922bb',borderColor:'#639922',borderWidth:1},
+              {label:'Negative',data:qids.map(q=>sq[q].negative),backgroundColor:'#E24B4Abb',borderColor:'#E24B4A',borderWidth:1},
+              {label:'Neutral', data:qids.map(q=>sq[q].neutral), backgroundColor:'#888780bb',borderColor:'#888780',borderWidth:1}
+            ]
+          },
+          options:{
+            responsive:true,maintainAspectRatio:false,
+            scales:{x:{stacked:true,ticks:{font:{size:9}}},y:{stacked:true}},
+            plugins:{legend:{labels:{font:{size:11},boxWidth:10}}}
+          }
+        });
+        new Chart(document.getElementById('sentPieChart'),{
+          type:'doughnut',
+          data:{
+            labels:['Positive','Negative','Neutral'],
+            datasets:[{data:[c.positive,c.negative,c.neutral],backgroundColor:['#639922','#E24B4A','#888780'],borderWidth:2,borderColor:'#fff'}]
+          },
+          options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:12},boxWidth:12}}}}
+        });
         const kc=document.getElementById('keywordCols');
         const cfg={positive:{bg:'#eaf3de',tc:'#3B6D11'},negative:{bg:'#fcebeb',tc:'#A32D2D'},neutral:{bg:'#f1efe8',tc:'#5F5E5A'}};
         Object.keys(cfg).forEach(s=>{
@@ -853,7 +809,7 @@ new Chart(document.getElementById('sentPieChart'), {
         document.getElementById('customResult').innerHTML=`<div style="background:${bg[s]};color:${tc[s]};padding:10px 14px;border-radius:8px;font-size:13px"><strong style="text-transform:capitalize">${s}</strong> — ${msgs[s]}</div>`;
       }
 
-      /* TRENDS */
+      /* ── TRENDS ── */
       let builtT=false;
       function buildTrends(){
         if(builtT)return; builtT=true;
@@ -865,31 +821,31 @@ new Chart(document.getElementById('sentPieChart'), {
           terms.forEach(t=>{freq[q][t]=TWEETS.filter(tw=>tw.qid===q&&tw.text.toLowerCase().includes(t)).length;});
         });
         const maxF=Math.max(...qids.flatMap(q=>terms.map(t=>freq[q][t])));
-        let html=`<table style="border-collapse:collapse;font-size:11px;min-width:600px;width:100%">
+        let html=`<table style="border-collapse:collapse;font-size:11px;min-width:700px;width:100%">
         <tr><th style="padding:5px 8px;border:1px solid #e0e0d8">Query</th>`
         +terms.map(t=>`<th style="padding:4px 6px;border:1px solid #e0e0d8;writing-mode:vertical-rl;transform:rotate(180deg);height:65px;font-size:10px">${t}</th>`).join('')+`</tr>`;
         qids.forEach(q=>{
-          html+=`<tr><td style="padding:5px 8px;border:1px solid #e0e0d8;font-weight:500;white-space:nowrap;font-size:12px">${q}</td>`;
+          html+=`<tr><td style="padding:5px 8px;border:1px solid #e0e0d8;font-weight:500;white-space:nowrap;font-size:11px">${q}</td>`;
           terms.forEach(t=>{
             const v=freq[q][t];
             const a=(v/maxF);
             const bg=`rgba(127,119,221,${(a*0.75+0.05).toFixed(2)})`;
             const tc=a>0.5?'#26215C':'#333';
-            html+=`<td style="padding:5px 8px;border:1px solid #e0e0d8;background:${bg};color:${tc};text-align:center;font-size:12px">${v}</td>`;
+            html+=`<td style="padding:5px 8px;border:1px solid #e0e0d8;background:${bg};color:${tc};text-align:center;font-size:11px">${v}</td>`;
           });
           html+='</tr>';
         });
         document.getElementById('heatmap').innerHTML=html+'</table>';
 
         const entities=[
-          {name:'Iran',count:312,type:'country',tc:'#185FA5',bg:'#E6F1FB'},
-          {name:'Middle East',count:198,type:'location',tc:'#0F6E56',bg:'#E1F5EE'},
-          {name:'Khamenei',count:87,type:'person',tc:'#854F0B',bg:'#FAEEDA'},
-          {name:'Hormuz Strait',count:76,type:'location',tc:'#0F6E56',bg:'#E1F5EE'},
-          {name:'IRGC',count:64,type:'organization',tc:'#993C1D',bg:'#FAECE7'},
-          {name:'nuclear deal',count:59,type:'concept',tc:'#534AB7',bg:'#EEEDFE'},
-          {name:'Pentagon',count:48,type:'organization',tc:'#993C1D',bg:'#FAECE7'},
-          {name:'United States',count:134,type:'country',tc:'#185FA5',bg:'#E6F1FB'},
+          {name:'Iran',count:1380,type:'country',tc:'#185FA5',bg:'#E6F1FB'},
+          {name:'Middle East',count:920,type:'location',tc:'#0F6E56',bg:'#E1F5EE'},
+          {name:'United States',count:760,type:'country',tc:'#185FA5',bg:'#E6F1FB'},
+          {name:'Khamenei',count:390,type:'person',tc:'#854F0B',bg:'#FAEEDA'},
+          {name:'Hormuz Strait',count:340,type:'location',tc:'#0F6E56',bg:'#E1F5EE'},
+          {name:'IRGC',count:290,type:'organization',tc:'#993C1D',bg:'#FAECE7'},
+          {name:'nuclear deal',count:270,type:'concept',tc:'#534AB7',bg:'#EEEDFE'},
+          {name:'Pentagon',count:220,type:'organization',tc:'#993C1D',bg:'#FAECE7'},
         ];
         const maxC=entities[0].count;
         const el=document.getElementById('entityList');
@@ -902,110 +858,44 @@ new Chart(document.getElementById('sentPieChart'), {
           </div>`;
         });
 
-        new Chart(document.getElementById('polarityChart'), {
-    type: 'bar',
-    data: {
-        labels: qids,
-        datasets: [
-            {
-                label: 'Positive %',
-                data: qids.map(q => {
-                    const ts = TWEETS.filter(t => t.qid === q);
-                    return +(
-                        ts.filter(t => t.sentiment === 'positive').length /
-                        ts.length *
-                        100
-                    ).toFixed(1);
-                }),
-                backgroundColor: '#639922bb',
-                borderColor: '#639922',
-                borderWidth: 1
-            },
-            {
-                label: 'Negative %',
-                data: qids.map(q => {
-                    const ts = TWEETS.filter(t => t.qid === q);
-                    return +(
-                        ts.filter(t => t.sentiment === 'negative').length /
-                        ts.length *
-                        100
-                    ).toFixed(1);
-                }),
-                backgroundColor: '#E24B4Abb',
-                borderColor: '#E24B4A',
-                borderWidth: 1
-            }
-        ]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            y: {
-                ticks: {
-                    callback: v => v + '%',
-                    font: { size: 11 }
-                }
-            }
-        },
-        plugins: {
-            legend: {
-                labels: {
-                    font: { size: 11 },
-                    boxWidth: 10
-                }
-            }
-        }
-    }
-});
+        new Chart(document.getElementById('polarityChart'),{
+          type:'bar',
+          data:{
+            labels:qids,
+            datasets:[
+              {label:'Positive %',data:qids.map(q=>{const ts=TWEETS.filter(t=>t.qid===q);return +(ts.filter(t=>t.sentiment==='positive').length/ts.length*100).toFixed(1);}),backgroundColor:'#639922bb',borderColor:'#639922',borderWidth:1},
+              {label:'Negative %',data:qids.map(q=>{const ts=TWEETS.filter(t=>t.qid===q);return +(ts.filter(t=>t.sentiment==='negative').length/ts.length*100).toFixed(1);}),backgroundColor:'#E24B4Abb',borderColor:'#E24B4A',borderWidth:1}
+            ]
+          },
+          options:{
+            responsive:true,maintainAspectRatio:false,
+            scales:{x:{ticks:{font:{size:9}}},y:{ticks:{callback:v=>v+'%',font:{size:11}}}},
+            plugins:{legend:{labels:{font:{size:11},boxWidth:10}}}
+          }
+        });
 
         const days=Array.from({length:30},(_,i)=>'D'+(i+1));
-      new Chart(document.getElementById('volChart'), {
-    type: 'line',
-    data: {
-        labels: days,
-        datasets: qids.map((q, qi) => ({
-            label: q,
-            data: days.map((_, i) =>
-                Math.round(7 + 8 * Math.abs(Math.sin(i / 5 + qi * 1.1)))
-            ),
-            borderColor: QUERIES[q].color,
-            backgroundColor: QUERIES[q].color + '18',
-            fill: true,
-            tension: 0.4,
-            pointRadius: 0,
-            borderWidth: 1.5
-        }))
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                labels: {
-                    font: { size: 10 },
-                    boxWidth: 10
-                }
-            }
-        },
-        scales: {
-            x: {
-                ticks: {
-                    maxTicksLimit: 10,
-                    font: { size: 10 }
-                }
-            },
-            y: {
-                ticks: {
-                    font: { size: 10 }
-                }
-            }
-        }
-    }
-});
+        new Chart(document.getElementById('volChart'),{
+          type:'line',
+          data:{
+            labels:days,
+            datasets:qids.map((q,qi)=>({
+              label:q,
+              data:days.map((_,i)=>Math.round(7+8*Math.abs(Math.sin(i/5+qi*1.1)))),
+              borderColor:QUERIES[q].color,
+              backgroundColor:QUERIES[q].color+'18',
+              fill:true,tension:0.4,pointRadius:0,borderWidth:1.5
+            }))
+          },
+          options:{
+            responsive:true,maintainAspectRatio:false,
+            plugins:{legend:{labels:{font:{size:9},boxWidth:8}}},
+            scales:{x:{ticks:{maxTicksLimit:10,font:{size:10}}},y:{ticks:{font:{size:10}}}}
+          }
+        });
       }
 
-      /* EXPLORE */
+      /* ── EXPLORE ── */
       function renderTweets(){
         const qf=document.getElementById('filterQuery').value;
         const sf=document.getElementById('filterSent').value;
